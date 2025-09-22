@@ -1,7 +1,7 @@
 'use client';
 
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { EarthIcon, FlameIcon, HomeIcon, PlaySquareIcon, ShoppingCart, Sidebar } from "lucide-react";
+import { EarthIcon, FlameIcon, HomeIcon, PlayIcon, PlaySquareIcon, ShoppingCart, Sidebar, Users, Users2 } from "lucide-react";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
 
@@ -10,9 +10,9 @@ import Link from "next/link";
 
 const items = [
     {
-        title: "Home",
+        title: "Next Up",
         url: "/",
-        icon: HomeIcon,
+        icon: PlayIcon,
     },
     {
         title: "Explorer",
@@ -20,9 +20,9 @@ const items = [
         icon: EarthIcon
     },
     {
-        title: "Subscriptions",
+        title: "Following",
         url: "/feed/follows",
-        icon: PlaySquareIcon,
+        icon: Users,
         auth:true,
     },
     {

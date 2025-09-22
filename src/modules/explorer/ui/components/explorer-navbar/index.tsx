@@ -14,56 +14,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Gift, Rocket } from "lucide-react";
+import { ChartNetwork, Gift, Plus, Rocket, Tv, Tv2, Tv2Icon, Upload } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { useAuth, useClerk } from "@clerk/nextjs";
+import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator";
 
 // XP indicator with loading state and tooltip
-const XpIndicator = ({
-  xp,
-  isLoading = false,
-}: {
-  xp: number;
-  isLoading?: boolean;
-}) => {
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800">
-        <Skeleton className="h-4 w-4 rounded-full" />
-        <Skeleton className="h-4 w-10" />
-      </div>
-    );
-  }
 
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 text-sm font-medium border border-blue-100 dark:border-blue-800/30 cursor-help">
-            <Link href={"/market"} className="flex items-center gap-2">
-              <div className="relative flex items-center justify-center">
-                <Gift className="h-4 w-4 text-purple-700 " />
-                {/* <Image
-                src="/xpicon.png"
-                alt="Experience Points"
-                width={32}
-                height={32}
-                className="text-blue-500"
-              /> */}
-              </div>
-              <span className="text-purple-700 dark:text-purple-600 font-semibold">
-                {xp.toLocaleString()} XP
-              </span>
-            </Link>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Your total experience in the platform</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
 
 // Navigation item component to avoid repetition
 const NavItem = ({
@@ -90,7 +47,7 @@ const NavItem = ({
     return (
       <Link
         href={href}
-        className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="px-2 py-2 rounded-md text-sm font-medium text-secondary dark:text-secondary hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         {children}
       </Link>
@@ -122,14 +79,14 @@ export const ExplorerNavBar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   const { userId: clerkUserId } = useAuth();
-  const  clerk  = useClerk();
+  const clerk = useClerk();
   const { data: user } = trpc.users.getByClerkId.useQuery({
     clerkId: clerkUserId,
   });
   const userId = user?.id;
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#212121]/80 backdrop-blur-md flex items-center px-4 z-50 border-b border-gray-200/50 dark:border-gray-700/50 transition-all ${
+      className={`fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md flex items-center px-4 z-50 border-b border-border/50 transition-all ${
         isScrolled ? "shadow-sm" : ""
       }`}
     >
@@ -139,7 +96,7 @@ export const ExplorerNavBar = () => {
           <SidebarTrigger />
           <Link
             href="/"
-            className="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="flex items-center p-2 rounded-md hover:bg-muted transition-colors"
           >
             <div className="flex items-center">
               <Image
@@ -168,12 +125,25 @@ export const ExplorerNavBar = () => {
         {/* XP indicator + right controls */}
         <div className="flex-shrink-0 items-center flex gap-3">
           {/* Desktop navigation */}
+
           <NavItem clerk={clerk} userId={userId} href={`/users/${userId}`}>
-            My community
+            <div className="flex items-center gap-2">
+              <Tv2Icon className="size-4" />
+              My Channel
+            </div>
+          </NavItem>
+
+          <NavItem clerk={clerk} userId={userId} href="/studio">
+            <div className="flex items-center gap-1">
+              <Upload className="size-4" />
+              Upload
+            </div>
           </NavItem>
 
           <XpIndicator xp={myXp} isLoading={isLoading} />
-          <ThemeToggle />
+          <div className="m-1">
+          <ThemeToggle  />
+          </div>
           <AuthButton />
         </div>
       </div>

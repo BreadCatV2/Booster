@@ -1,8 +1,10 @@
+import { MarketSection } from "@/modules/market/sections/market-section";
+import { trpc } from "@/trpc/server";
+
 const Page = () => {
+     
     return (
-        <div>
-            Market will show
-        </div>
+        <MarketSection />
     )
 }
 export default Page;

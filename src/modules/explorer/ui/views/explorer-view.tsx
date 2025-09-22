@@ -79,7 +79,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
           transition={{ delay: 0.2 }}
           className="relative"
         >
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-3xl p-8 border border-amber-200 dark:border-amber-800">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-[#333333] dark:to-[#333333] rounded-3xl p-8 border border-amber-200 dark:border-amber-800">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full" />
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Featured Today</h2>
@@ -185,7 +185,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                   transition={{ delay: index * 0.1 }}
                   className="group cursor-pointer"
                 >
-                  <div className="relative  rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300 hover:shadow-xl">
+                  <div className="relative  rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#333333] dark:to-[#333333] border-gray-200 dark:border-gray-100 hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300 hover:shadow-xl">
                     <div className="relative aspect-video ">
                       <Image
                         src={video.thumbnailUrl}
@@ -247,7 +247,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
         transition={{ delay: 0.4 }}
         className="text-center py-12"
       >
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-3xl p-8 border border-amber-200 dark:border-amber-800">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-[#333333] dark:to-[#333333] rounded-3xl p-8 border border-amber-200 dark:border-amber-800">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Ready to explore more?
           </h2>

@@ -113,7 +113,7 @@ export const HomeView = () => {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                transition={{ type: "tween", duration: 0.12, ease: "easeOut" }}
                 className="w-full h-full"
               >
                 {videoIndex < videos.length ? (
