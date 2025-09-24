@@ -3,6 +3,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ExplorerNavBar, } from "../components/explorer-navbar";
 import { ExplorerSidebar, } from "../components/explorer-sidebar";
+import { trpc } from "@/trpc/server";
 
 
 interface HomeLayoutProps {

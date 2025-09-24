@@ -40,6 +40,10 @@ export const VideoOwner = ({ user, videoId }: Props) => {
   const [selectedXp, setSelectedXp] = useState(10);
   const [showAddXpModal, setShowAddXpModal] = useState(false);
 
+  
+  const [boostPoints] = trpc.xp.getBoostByUserId.useSuspenseQuery({userId:user.id})
+
+
   const progressPercentage = 92;
 
   const xpNeededForNextLevel = 1000;

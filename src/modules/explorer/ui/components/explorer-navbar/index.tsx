@@ -18,6 +18,7 @@ import { ChartNetwork, Gift, Plus, Rocket, Tv, Tv2, Tv2Icon, Upload } from "luci
 import { trpc } from "@/trpc/client";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator";
+import { randomUUID } from "crypto";
 
 // XP indicator with loading state and tooltip
 
@@ -56,7 +57,8 @@ const NavItem = ({
 };
 
 export const ExplorerNavBar = () => {
-  const [myXp, setMyXp] = useState(2450);
+
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -78,12 +80,24 @@ export const ExplorerNavBar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
   const { userId: clerkUserId } = useAuth();
   const clerk = useClerk();
   const { data: user } = trpc.users.getByClerkId.useQuery({
     clerkId: clerkUserId,
   });
   const userId = user?.id;
+  const { data: myXp } = trpc.xp.getXpByUserId.useQuery(
+  { userId: userId! },
+  {
+    enabled: !!userId,           // dont fetch until there is a user
+    staleTime: 60_000,           // reduce refetching
+    refetchOnWindowFocus: false, // optional (suggested by companion)
+  }
+);
+
+console.log("A")
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md flex items-center px-4 z-50 border-b border-border/50 transition-all ${
@@ -140,7 +154,7 @@ export const ExplorerNavBar = () => {
             </div>
           </NavItem>
 
-          <XpIndicator xp={myXp} isLoading={isLoading} />
+          <XpIndicator xp={myXp?.xp || 0} isLoading={isLoading} />
           <div className="m-1">
           <ThemeToggle  />
           </div>

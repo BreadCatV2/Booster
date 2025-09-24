@@ -1,5 +1,7 @@
 import { Tooltip,TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { User } from "@/modules/users/types";
+import { trpc } from "@/trpc/client";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { AnimatePresence, motion, progressPercentage } from "framer-motion";
 import { ZapIcon, Plus, X, CircleQuestionMark, Boxes } from "lucide-react";
 import Link from "next/link";
@@ -18,11 +20,44 @@ export const XpCard = ({ user,setShowAddXpModal }: Props) => {
   const level = 1;
   const progressPercentage = (currentXp / xpNeededForNextLevel) * 100;
 
+  const { userId: clerkUserId } = useAuth();
+  const clerk = useClerk();
+  const { data: userLogged } = trpc.users.getByClerkId.useQuery({
+    clerkId: clerkUserId,
+  });
+  const userId = userLogged?.id; //logged user id
+
+  const { data: myXp } = trpc.xp.getXpByUserId.useQuery(
+    { userId: userId! },
+    {
+      enabled: !!userId,           // dont fetch until there is a user
+      staleTime: 60_000,           // reduce refetching
+      refetchOnWindowFocus: false, // optional (suggested by companion)
+    }
+  );
+
+  const loggedUserXp = myXp?.xp || 0;
+
+  const utils = trpc.useUtils();
+
+  const buy = trpc.xp.buyBoostById.useMutation({
+    onSuccess: () => {
+      utils.xp.getXpByUserId.invalidate({ userId });
+      utils.xp.getBoostByUserId.invalidate({userId: user.id})
+    }
+  })
+
+
   const handleAddXp = () => {
     // Here you would implement the actual XP adding logic
-    console.log(`Adding ${selectedXp} XP`);
-    setShowAddXpModal(false);
-    toast.success(`Added ${selectedXp} points to ${user.name}`);
+    if(loggedUserXp >= selectedXp){
+      buy.mutate({price:selectedXp, recipientId: user.id})
+      setShowAddXpModal(false);
+      toast.success(`Added ${selectedXp} points to ${user.name}`);
+    }else{
+      //TODO: implement buy xp dialog
+      alert('not enough xp')
+    }
   };
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {

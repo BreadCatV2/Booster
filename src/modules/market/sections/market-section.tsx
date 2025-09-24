@@ -5,12 +5,42 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Coins, ShoppingCart, Search, Filter, Crown, Palette, Sparkles, BadgeCheck, Zap, Star, Heart, Rocket, Lock, Check, Boxes, Plus, PlusCircle, Box, Wallet, Landmark } from "lucide-react"
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator"
+import { trpc } from "@/trpc/client"
+import { useAuth, useClerk } from "@clerk/nextjs"
 
 export const MarketSection = () => {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [userCoins, setUserCoins] = useState(2450)
   const [ownedItems, setOwnedItems] = useState([1, 6]) // IDs of owned items
+
+
+  
+
+    const { userId: clerkUserId } = useAuth();
+    const clerk = useClerk();
+    const { data: user } = trpc.users.getByClerkId.useQuery({
+      clerkId: clerkUserId,
+    });
+    const userId = user?.id;
+    const { data: myXp } = trpc.xp.getXpByUserId.useQuery(
+    { userId: userId! },
+    {
+      enabled: !!userId,           // dont fetch until there is a user
+      staleTime: 60_000,           // reduce refetching
+      refetchOnWindowFocus: false, // optional (suggested by companion)
+    }
+  );
+
+  const utils = trpc.useUtils();
+
+  const buy = trpc.xp.buyById.useMutation({
+    onSuccess: () => {
+      utils.xp.getXpByUserId.invalidate({userId});
+    }
+  })
+
+  const userCoins = myXp?.xp || 0;
+
 
   // Marketplace items data
   const marketplaceItems = [
@@ -38,10 +68,14 @@ export const MarketSection = () => {
   // Handle purchasing an item
   const handlePurchase = (itemId: number, price: number) => {
     if (userCoins >= price) {
-      setUserCoins(prev => prev - price)
+      buy.mutate({price});
+
+
+      //TODO: set owned items --> db
       setOwnedItems(prev => [...prev, itemId])
       // In a real app, you'd make an API call to update the user's inventory
     } else {
+      //TODO: implement buy more xp dialog
       alert("Not enough coins!")
     }
   }
@@ -190,7 +224,6 @@ export const MarketSection = () => {
                         <Button 
                           className="rounded-full bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 text-sm hover:opacity-90"
                           onClick={() => handlePurchase(item.id, item.price)}
-                          disabled={userCoins < item.price}
                         >
                           <ShoppingCart className="h-4 w-4 mr-1" />
                           Buy Now

@@ -8,7 +8,7 @@ export const XpIndicator = ({
   xp,
   isLoading = false,
 }: {
-  xp: number;
+  xp: number,
   isLoading?: boolean;
 }) => {
   if (isLoading) {

@@ -12,6 +12,7 @@ import { commentReactionsRouter } from '@/modules/comment-reactions/server/proce
 import { commentRepliesRouter } from '@/modules/comment-replies/server/procedures';
 import { homeRouter } from '@/modules/home/server/procedures';
 import { explorerRouter } from '@/modules/explorer/server/procedures';
+import { xpRouter } from '@/modules/xp/server/procedures';
 // import { followsRouter } from '@/modules/follows/server/procedure';
 
 export const appRouter = createTRPCRouter({
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
     commentReactions: commentReactionsRouter,
     home: homeRouter,
     explorer: explorerRouter,
+    xp: xpRouter,
     // userFollowers: followsRouter
     
 

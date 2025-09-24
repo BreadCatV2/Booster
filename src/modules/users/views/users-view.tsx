@@ -21,22 +21,23 @@ interface Props {
 export const UsersView = ({ userId }: Props) => {
   const [user] = trpc.users.getByUserId.useSuspenseQuery({ userId })
   const [userVideos] = trpc.users.getVideosByUserId.useSuspenseQuery({ userId })
+  const [boostPoints] = trpc.xp.getBoostByUserId.useSuspenseQuery({userId})
 
   const router = useRouter();
-
-  console.log(userVideos)
 
   const [currentXp, setCurrentXp] = useState(3250)
   const [xpForNextLevel] = useState(5000)
   const [showXpPopup, setShowXpPopup] = useState(false)
   const [selectedXpValue, setSelectedXpValue] = useState(100)
+  
+  //TODO: implement community rankings
   const [activeTab, setActiveTab] = useState("videos")
 
   // XP values for the slider/options
   const xpValues = [10, 20, 50, 75, 100, 500, 1000]
 
   // Calculate XP bar percentage
-  const xpPercentage = Math.max(0, Math.min(100, (currentXp / xpForNextLevel) * 100))
+  const xpPercentage = Math.max(0, Math.min(100, (boostPoints.boostPoints / xpForNextLevel) * 100))
 
   // Handle adding XP
   const handleAddXp = () => {
@@ -122,7 +123,10 @@ export const UsersView = ({ userId }: Props) => {
               </div>
 
               <div className="flex justify-between text-muted-foreground text-sm mb-4">
-                <span>{currentXp.toLocaleString()} Community XP</span>
+                <div className="flex items-start gap-1 text-center">
+
+                <span className="font-semibold">Boost progress </span><span>{xpPercentage.toFixed(3)}% </span>
+                </div>
                 <span>{xpForNextLevel.toLocaleString()} XP for next level</span>
               </div>
 
