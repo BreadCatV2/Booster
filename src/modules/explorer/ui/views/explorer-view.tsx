@@ -8,18 +8,16 @@ import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
 import { User } from "@/modules/users/types";
 import { formatDuration } from "@/lib/utils";
-import type { RouterOutputs } from "@/trpc/client";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
 import { UserAvatar } from "@/components/user-avatar";
 import { VideoOwner } from "@/modules/videos/ui/components/video-owner";
 import { InfiniteScroll } from "@/components/infinite-scroll";
+import Link from "next/link";
 
 interface HomeViewProps {
   categoryId?: string;
 }
 
-type Page = RouterOutputs["explorer"]["getMany"];
-type Video = Page["items"][number];
 
 export const ExplorerView = ({ categoryId }: HomeViewProps) => {
   const [selectedCategory, setSelectedCategory] = useState(categoryId || "all");
@@ -40,7 +38,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
   const featuredVideo = videos.find(v => v.isFeatured);
 
   return (
-    <div className="max-w-[2400px] mx-auto mb-10 px-4 pt-2.5 flex flex-col gap-y-8">
+    <div className="overflow-hidden mb-10 px-4 pt-2.5 flex flex-col gap-y-8">
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
@@ -127,6 +125,8 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
 
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               {/* Video Card */}
+              <Link href={`/explorer/videos/${featuredVideo.id}`}>
+
               <motion.div 
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
@@ -144,7 +144,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   
                   {/* Content Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="absolute top-0 left-0 right-0 p-6">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-2xl font-bold text-white line-clamp-2 pr-4 flex-1">
                         {featuredVideo.title}
@@ -155,7 +155,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <UserAvatar
                           size="lg"
                           imageUrl={featuredVideo.user?.imageUrl || "/public-user.png"}
@@ -164,32 +164,24 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                         />
                         <div>
                           <p className="text-white font-medium">{featuredVideo.user?.name}</p>
-                          <p className="text-gray-300 text-sm">Content Creator</p>
                         </div>
                       </div>
                       
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                      >
-                        <Play className="w-5 h-5" />
-                        Watch Now
-                      </motion.button>
+
+                      
                     </div>
                   </div>
                 </div>
               </motion.div>
-
+              </Link>
               {/* Features List */}
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Why you'll love this:</h3>
                 <ul className="space-y-4">
                   {[
-                    "Stunning cinematography and visuals",
-                    "Expert storytelling techniques", 
+                    "Funny ending",
+                    "Unexpected outcome", 
                     "Community rating: 4.8+ stars",
-                    "Exclusive behind-the-scenes content"
                   ].map((feature, index) => (
                     <motion.li
                       key={index}
@@ -208,14 +200,17 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                 </ul>
                 
                 <div className="flex gap-4 pt-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-amber-500/25 transition-all"
-                  >
-                    <Play className="w-5 h-5" />
-                    Watch Featured Video
-                  </motion.button>
+
+                  <Link href={`/explorer/videos/${featuredVideo.id}`}>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-amber-500/25 transition-all"
+                    >
+                      <Play className="w-5 h-5" />
+                      Watch Featured Video
+                    </motion.button>
+                  </Link>
                   
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -284,12 +279,14 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                   key={video.id}
                   initial={{ opacity: 0, y: 30, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  transition={{  duration: 0.3 }}
                   whileHover={{ y: -8, scale: 1.02 }}
                   onHoverStart={() => setHoveredVideo(video.id)}
                   onHoverEnd={() => setHoveredVideo(null)}
                   className="group cursor-pointer relative"
                 >
+
+                  <Link href={`/explorer/videos/${video.id}`}>
                   {/* Hover Glow Effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform scale-105" />
                   
@@ -358,10 +355,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                             <Eye className="w-4 h-4" />
                             <span>{formatCompactNumber(Number(video.videoViews) ?? 0)}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-amber-500" />
-                            <span>{Number(video.averageRating).toFixed(1) || "0.0"}</span>
-                          </div>
+                          
                         </div>
                         
                         <motion.button
@@ -369,11 +363,15 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                           whileTap={{ scale: 0.9 }}
                           className="text-gray-400 hover:text-amber-500 transition-colors"
                         >
-                          <Heart className="w-4 h-4" />
+                            <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-amber-500 " />
+                            <span>{Number(video.averageRating).toFixed(1) || "0.0"}</span>
+                          </div>
                         </motion.button>
                       </div>
                     </div>
                   </div>
+                  </Link>
                 </motion.div>
               ))}
             </motion.div>
