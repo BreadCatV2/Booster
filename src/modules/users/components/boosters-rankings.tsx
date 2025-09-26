@@ -85,7 +85,7 @@ export const BoosterRankingsSuspense = ({ userId }: Props) => {
                         <Card className="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-0 p-6 text-center">
                             <div className="relative mb-4">
                                 <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center border-4 border-gray-300">
-                                    <UserAvatar imageUrl={rankings.at(1)?.user.imageUrl} name={rankings.at(1)?.user.name} size='llg' userId={rankings.at(0)?.user.id} />
+                                    <UserAvatar imageUrl={rankings.at(1)?.user.imageUrl} name={rankings.at(1)?.user.name} size='llg' userId={rankings.at(1)?.user.id} />
                                 </div>
                                 <AwardIcon className="w-6 h-6 text-gray-500 absolute -top-1 right-8" />
                                  <div className="absolute -top-2 -right-2 bg-slate-400 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-black">
