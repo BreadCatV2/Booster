@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { trpc } from "@/trpc/client";
 import { VideoSection } from "../sections/video-section";
@@ -9,13 +9,19 @@ import { DEFAULT_LIMIT } from "@/constants";
 import { VideoGetOneOutput } from "@/modules/videos/types";
 import { useRouter } from "next/router";
 import { InfiniteScroll } from "@/components/infinite-scroll";
+import { ExplorerViewSuspense } from "@/modules/explorer/ui/views/explorer-view";
+import { ErrorBoundary } from "react-error-boundary";
 
 export const HomeView = () => {
-  // const [video] = trpc.home.getOne.useSuspenseQuery({
-  //   id: 'e4a0a1cd-4737-4c5d-9986-4d46f75067dd',
-  // });
-
-
+  return (
+    <Suspense fallback={<p>Loading</p>}>
+      <ErrorBoundary fallback={<p>Failed to load categories.</p>}>
+        <HomeViewSuspense  />
+      </ErrorBoundary>
+    </Suspense>
+  )
+}
+export const HomeViewSuspense = () => {
   const [data, query] = trpc.home.getMany.useSuspenseInfiniteQuery(
     { limit: DEFAULT_LIMIT },
     { getNextPageParam: (lastPage) => lastPage.nextCursor }

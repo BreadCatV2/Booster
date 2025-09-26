@@ -15,8 +15,8 @@ export const StudioNavBar = () => {
                     <SidebarTrigger />
                     <Link href="/">
                     <div className="p-4 flex items-center gap-1">
-                        <Image src="/logo.svg" alt="Logo" width={30} height={30} className="mr-1" />
-                        <Image src="/BoosterLongLogo.svg" alt="Booster" width={150} height={30} className="hidden sm:block" />
+                        <Image src="/logo.webp" alt="Logo" width={30} height={30} className="mr-1" />
+                        <Image src="/BoosterLongLogo.webp" alt="Booster" width={150} height={30} className="hidden sm:block" />
                         {/* <p className="text/* - xl font-semibold tracking-tight">Studio</p> */}
                     </div>
                    </Link>

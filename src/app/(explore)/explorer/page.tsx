@@ -3,6 +3,8 @@ import { ExplorerView } from "@/modules/explorer/ui/views/explorer-view"
 import { trpc } from "@/trpc/server"
 import { HydrateClient } from "@/trpc/server"
 
+export const dynamic = 'force-dynamic'; //IMPORTANT: WE DON'T AWAIT. BUT RATHER WE PREFETCH
+
 const Page = () => {
     void trpc.explorer.getMany.prefetch({limit: DEFAULT_LIMIT * 2});
     return (

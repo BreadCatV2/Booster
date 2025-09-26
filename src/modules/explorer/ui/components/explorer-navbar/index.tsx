@@ -114,14 +114,14 @@ console.log("A")
           >
             <div className="flex items-center">
               <Image
-                src="/logo.svg"
+                src="/logo.webp"
                 alt="Logo"
                 width={30}
                 height={30}
                 className="mr-2"
               />
               <Image
-                src="/BoosterLongLogo.svg"
+                src="/BoosterLongLogo.webp"
                 alt="Booster"
                 width={150}
                 height={30}

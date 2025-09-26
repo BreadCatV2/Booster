@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { compactDate, compactNumber } from '@/lib/utils';
 import { HomeGetManyOutput, VideoGetOneOutput } from '@/modules/videos/types';
 import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
@@ -19,11 +19,24 @@ import { DEFAULT_LIMIT } from '@/constants';
 import { XpCard } from '../components/xp-card';
 import { VideoMenu } from '@/modules/videos/ui/components/video-menu';
 import { VideoOwner } from '@/modules/videos/ui/components/video-owner';
+import { ErrorBoundary } from 'react-error-boundary';
+import { HomeViewSuspense } from '../views/home-view';
 
 
 interface Props {  videoId: string; }
 
-export const VideoSection = ({ videoId }: Props) => {
+
+export const VideoSection = ({videoId}:Props) => {
+  return (
+    <Suspense fallback={<p>Loading</p>}>
+      <ErrorBoundary fallback={<p>Failed to load categories.</p>}>
+        <VideoSectionSuspense videoId={videoId}  />
+      </ErrorBoundary>
+    </Suspense>
+  )
+}
+
+export const VideoSectionSuspense = ({ videoId }: Props) => {
 
     const [video] = trpc.videos.getOne.useSuspenseQuery({id:videoId})
 

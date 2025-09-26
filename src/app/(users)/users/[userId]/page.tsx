@@ -8,6 +8,7 @@ interface PageProps {
     params: Promise<{ userId: string }>;
 }
 
+
 const Page = async ({ params }: PageProps) => {
     const { userId } = await params; //To get the video ID in the route. The folder should be called [videoId] the same as the variable name
 

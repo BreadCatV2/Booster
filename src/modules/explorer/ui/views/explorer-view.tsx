@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { CategoriesSection } from "../sections/categories-section";
 import { Play, Eye, Clock, Star, TrendingUp, Sparkles, ArrowRight, Zap, Heart, Share2, Calendar } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Image from "next/image";
 import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
@@ -13,15 +13,116 @@ import { UserAvatar } from "@/components/user-avatar";
 import { VideoOwner } from "@/modules/videos/ui/components/video-owner";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import Link from "next/link";
+import { ClerkLoading } from "@clerk/nextjs";
+import { ErrorBoundary } from "react-error-boundary";
 
 interface HomeViewProps {
   categoryId?: string;
 }
 
-
 export const ExplorerView = ({ categoryId }: HomeViewProps) => {
+  return (
+    <Suspense fallback={<ExplorerSkeleton />}>
+      <ErrorBoundary fallback={<p>Failed to load categories.</p>}>
+        <ExplorerViewSuspense categoryId={categoryId} />
+      </ErrorBoundary>
+    </Suspense>
+  )
+}
+
+const ExplorerSkeleton = () => {
+  return (
+    <div className="overflow-hidden mb-10 px-4 pt-2.5 flex flex-col gap-y-8 animate-pulse">
+      {/* Header Skeleton */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-3 bg-gray-200 dark:bg-gray-800 px-6 py-3 rounded-full mb-6 mx-auto w-48 h-10"></div>
+        <div className="h-16 bg-gray-200 dark:bg-gray-800 rounded-lg mb-4 max-w-2xl mx-auto"></div>
+        <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded-lg max-w-xl mx-auto"></div>
+      </div>
+
+      {/* Categories Skeleton */}
+      <div className="flex gap-4 justify-center mb-8">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="w-24 h-10 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+        ))}
+      </div>
+
+      {/* Featured Video Skeleton */}
+      <div className="relative bg-gray-200 dark:bg-gray-800 rounded-3xl p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-3 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+            <div className="w-48 h-8 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+          </div>
+          <div className="w-24 h-6 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+        </div>
+        
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="relative rounded-2xl overflow-hidden">
+            <div className="aspect-video bg-gray-300 dark:bg-gray-700 rounded-2xl"></div>
+          </div>
+          <div className="space-y-6">
+            <div className="w-64 h-8 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="w-4 h-4 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                  <div className="w-48 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-4 pt-4">
+              <div className="flex-1 h-12 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+              <div className="w-12 h-12 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Video Grid Skeleton */}
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-2 h-12 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+            <div>
+              <div className="w-48 h-8 bg-gray-200 dark:bg-gray-800 rounded-lg mb-2"></div>
+              <div className="w-32 h-4 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+            </div>
+          </div>
+          <div className="w-24 h-12 bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+          {[...Array(9)].map((_, index) => (
+            <div key={index} className="group cursor-pointer relative">
+              <div className="relative bg-gray-200 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-300 dark:border-gray-700">
+                <div className="relative aspect-video overflow-hidden bg-gray-300 dark:bg-gray-700"></div>
+                <div className="p-4">
+                  <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-lg mb-3"></div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="w-24 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm ml-1">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                    </div>
+                    <div className="w-12 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
   const [selectedCategory, setSelectedCategory] = useState(categoryId || "all");
-  const [isLoading, setIsLoading] = useState(true);
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
 
   const [data, query] = trpc.explorer.getMany.useSuspenseInfiniteQuery(
@@ -31,9 +132,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
 
   const videos = useMemo(() => data ? data.pages.flatMap(p => p.items) : [], [data]);
 
-  useEffect(() => {
-    setIsLoading(false);
-  }, [selectedCategory]);
+
 
   const featuredVideo = videos.find(v => v.isFeatured);
 
@@ -56,30 +155,19 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
           <span className="text-sm font-semibold tracking-wide">TRENDING NOW</span>
           <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
         </motion.div>
-        
+
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight"
         >
-          Discover Amazing
+          Discover 
           <span className="block bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
             Content
           </span>
         </motion.h1>
-        
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed"
-        >
-          Explore curated videos from talented creators around the world
-          <span className="block text-amber-600 dark:text-amber-400 font-medium mt-2">
-            New content added daily
-          </span>
-        </motion.p>
+
       </motion.div>
 
       {/* Categories Section */}
@@ -103,7 +191,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
         >
           {/* Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-3xl blur-xl transform scale-105 group-hover:scale-110 transition-transform duration-500" />
-          
+
           <div className="relative bg-gradient-to-r from-amber-50 to-orange-50 dark:from-[#333333] dark:to-[#333333] rounded-3xl p-8 border border-amber-200 dark:border-amber-800 shadow-2xl">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
@@ -116,7 +204,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                   <span className="text-sm font-semibold">Editor's Pick</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span>Just added</span>
@@ -127,52 +215,52 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
               {/* Video Card */}
               <Link href={`/explorer/videos/${featuredVideo.id}`}>
 
-              <motion.div 
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="relative group/card"
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                  <VideoThumbnail
-                    duration={featuredVideo.duration || 0}
-                    title={featuredVideo.title}
-                    imageUrl={featuredVideo.thumbnailUrl}
-                    previewUrl={featuredVideo.previewUrl}
-                  />
-                  
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  
-                  {/* Content Overlay */}
-                  <div className="absolute top-0 left-0 right-0 p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-2xl font-bold text-white line-clamp-2 pr-4 flex-1">
-                        {featuredVideo.title}
-                      </h3>
-                      <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg">
-                        Featured
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-start gap-3">
-                        <UserAvatar
-                          size="lg"
-                          imageUrl={featuredVideo.user?.imageUrl || "/public-user.png"}
-                          name={featuredVideo.user?.name || "Anonymous"}
-                          userId={featuredVideo.user?.id}
-                        />
-                        <div>
-                          <p className="text-white font-medium">{featuredVideo.user?.name}</p>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="relative group/card"
+                >
+                  <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                    <VideoThumbnail
+                      duration={featuredVideo.duration || 0}
+                      title={featuredVideo.title}
+                      imageUrl={featuredVideo.thumbnailUrl}
+                      previewUrl={featuredVideo.previewUrl}
+                    />
+
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                    {/* Content Overlay */}
+                    <div className="absolute top-0 left-0 right-0 p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="text-2xl font-bold text-white line-clamp-2 pr-4 flex-1">
+                          {featuredVideo.title}
+                        </h3>
+                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg">
+                          Featured
                         </div>
                       </div>
-                      
 
-                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-3">
+                          <UserAvatar
+                            size="lg"
+                            imageUrl={featuredVideo.user?.imageUrl || "/public-user.png"}
+                            name={featuredVideo.user?.name || "Anonymous"}
+                            userId={featuredVideo.user?.id}
+                          />
+                          <div>
+                            <p className="text-white font-medium">{featuredVideo.user?.name}</p>
+                          </div>
+                        </div>
+
+
+
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
               </Link>
               {/* Features List */}
               <div className="space-y-6">
@@ -180,7 +268,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                 <ul className="space-y-4">
                   {[
                     "Funny ending",
-                    "Unexpected outcome", 
+                    "Unexpected outcome",
                     "Community rating: 4.8+ stars",
                   ].map((feature, index) => (
                     <motion.li
@@ -198,7 +286,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                     </motion.li>
                   ))}
                 </ul>
-                
+
                 <div className="flex gap-4 pt-4">
 
                   <Link href={`/explorer/videos/${featuredVideo.id}`}>
@@ -211,7 +299,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                       Watch Featured Video
                     </motion.button>
                   </Link>
-                  
+
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -240,11 +328,11 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                 {selectedCategory === "all" ? "Popular Videos" : `${selectedCategory} Videos`}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Top content 
+                Top content
               </p>
             </div>
           </div>
-          
+
           <motion.button
             whileHover={{ x: 5 }}
             className="flex items-center gap-3 bg-white dark:bg-gray-800 px-6 py-3 rounded-xl font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-600 transition-all group"
@@ -254,44 +342,34 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
           </motion.button>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, index) => (
-              <div key={index} className="animate-pulse">
-                <div className="bg-gray-200 dark:bg-gray-800 rounded-2xl aspect-video mb-4" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded mb-2" />
-                <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedCategory}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-              {videos.filter(v => !v.isFeatured).map((video, index) => (
-                <motion.div
-                  key={video.id}
-                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{  duration: 0.3 }}
-                  whileHover={{ y: -3, scale: 1.01 }}
-                  onHoverStart={() => setHoveredVideo(video.id)}
-                  onHoverEnd={() => setHoveredVideo(null)}
-                  className="group cursor-pointer relative"
-                >
 
-                  <Link href={`/explorer/videos/${video.id}`}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedCategory}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6"
+          >
+            {videos.filter(v => !v.isFeatured).map((video, index) => (
+              <motion.div
+                key={video.id}
+                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ y: -3, scale: 1.01 }}
+                onHoverStart={() => setHoveredVideo(video.id)}
+                onHoverEnd={() => setHoveredVideo(null)}
+                className="group cursor-pointer relative"
+              >
+
+                <Link href={`/explorer/videos/${video.id}`}>
                   {/* Hover Glow Effect */}
-                  
+
                   {/* TODO: This could be a premium feature */}
                   {/* <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform scale-105" /> */}
-                  
+
                   <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#333333] dark:to-[#333333] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300">
                     {/* Video Thumbnail */}
                     <div className="relative aspect-video overflow-hidden">
@@ -301,10 +379,10 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                         imageUrl={video.thumbnailUrl}
                         previewUrl={video.previewUrl}
                       />
-                      
+
                       {/* Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
+                      {/* <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
+
                       {/* Video Info Overlay */}
                       <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
                         {video.categoryId && (
@@ -312,7 +390,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                             {video.categoryId}
                           </div>
                         )}
-                        
+
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -321,7 +399,7 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                           <Play className="w-4 h-4" />
                         </motion.button>
                       </div>
-                      
+
                       {/* Duration */}
                       {/* <div className="absolute bottom-3 right-3 bg-black/80 text-white px-2 py-1 rounded-lg text-xs font-medium backdrop-blur-sm">
                         {formatDuration(video.duration)}
@@ -350,21 +428,21 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 ml-1">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1">
                             <Eye className="w-4 h-4" />
                             <span>{formatCompactNumber(Number(video.videoViews) ?? 0)}</span>
                           </div>
-                          
+
                         </div>
-                        
+
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           className="text-gray-400 hover:text-amber-500 transition-colors"
                         >
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 text-amber-500 " />
                             <span>{Number(video.averageRating).toFixed(1) || "0.0"}</span>
                           </div>
@@ -372,12 +450,11 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
                       </div>
                     </div>
                   </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        )}
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
 
       {/* CTA Section */}
@@ -424,12 +501,12 @@ export const ExplorerView = ({ categoryId }: HomeViewProps) => {
           </div>
         </div>
       </motion.div> */}
-       <InfiniteScroll
-              isManual={false}
-              hasNextPage={query.hasNextPage}
-              isFetchingNextPage={query.isFetchingNextPage}
-              fetchNextPage={query.fetchNextPage}
-            />
+      <InfiniteScroll
+        isManual={false}
+        hasNextPage={query.hasNextPage}
+        isFetchingNextPage={query.isFetchingNextPage}
+        fetchNextPage={query.fetchNextPage}
+      />
     </div>
   );
 };
