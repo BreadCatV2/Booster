@@ -7,6 +7,13 @@ import { Coins, ShoppingCart, Search, Filter, Crown, Palette, Sparkles, BadgeChe
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator"
 import { trpc } from "@/trpc/client"
 import { useAuth, useClerk } from "@clerk/nextjs"
+import { compactNumber } from "@/lib/utils"
+
+const LOOKUP_KEYS = ["xp_500","xp_1200","xp_2500","xp_5500","xp_10000","xp_50000"];
+
+enum lookupKeys{
+  "xp_500","xp_1200","xp_2500","xp_5500","xp_10000","xp_50000"
+}
 
 export const MarketSection = () => {
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -33,13 +40,13 @@ export const MarketSection = () => {
 
   const buy = trpc.xp.buyById.useMutation({
     onSuccess: () => {
-      utils.xp.getXpByUserId.invalidate({userId});
+      utils.xp.getXpByUserId.invalidate({ userId });
     }
   })
 
-  const addXp = trpc.xp.addXp.useMutation({
+  const addXp = trpc.xp.buyXp.useMutation({
     onSuccess: () => {
-      utils.xp.getXpByUserId.invalidate({userId});
+      utils.xp.getXpByUserId.invalidate({ userId });
       setShowXpPopup(false);
     }
   })
@@ -72,7 +79,7 @@ export const MarketSection = () => {
   // Handle purchasing an item
   const handlePurchase = (itemId: number, price: number) => {
     if (userCoins >= price) {
-      buy.mutate({price});
+      buy.mutate({ price });
       setOwnedItems(prev => [...prev, itemId])
     } else {
       setShowXpPopup(true);
@@ -84,28 +91,31 @@ export const MarketSection = () => {
     // Simulate ad watching process
     // In a real app, you'd integrate with an ad network like Google AdMob
     console.log("Starting rewarded ad...");
-    
+
     // Simulate ad completion after 3 seconds
-    setTimeout(() => {
-      addXp.mutate({ userId: userId!, amount: 100 }); // Give 100 XP for watching ad
-    }, 3000);
+    // setTimeout(() => {
+    //   addXp.mutate({ userId: userId!, amount: 100 }); // Give 100 XP for watching ad
+    // }, 3000);
   }
 
-  // Handle purchase with real money
-  const handlePurchaseXp = (amount: number, price: number) => {
-    // In a real app, you'd integrate with a payment processor like Stripe
-    console.log(`Purchasing ${amount} XP for $${price}`);
-    
-    // Simulate payment processing
-    addXp.mutate({ userId: userId!, amount });
-  }
+  const buyXp = trpc.xp.buyXp.useMutation();
 
-  // XP purchase options
-  const xpPackages = [
-    { amount: 500, price: 4.99, popular: false },
-    { amount: 1200, price: 9.99, popular: true },
-    { amount: 2500, price: 19.99, popular: false },
-    { amount: 5000, price: 34.99, popular: false },
+  // Handle purchase of Xp with 
+  const handlePurchaseXp = async (lookupKey: "xp_500" | "xp_1200"|"xp_2500"|"xp_5500"|"xp_10000"|"xp_50000" ) => {
+    console.log("AA")
+    const { url } = await buyXp.mutateAsync({ priceLookupKey: lookupKey });
+    window.location.href = url!;
+  };
+
+
+  // xp purchase options
+  const xpPackages: { amount:number; price:number; popular:boolean; lookup: "xp_500" | "xp_1200"|"xp_2500"|"xp_5500"|"xp_10000"|"xp_50000" }[] = [
+    { amount: 500, price: 1.99, popular: false, lookup: "xp_500" },
+    { amount: 1200, price: 3.99, popular: false, lookup: "xp_1200"  },
+    { amount: 2500, price: 7.99, popular: true, lookup: "xp_2500"  },
+    { amount: 5500, price: 15.99, popular: false, lookup: "xp_5500"  },
+    { amount: 10000, price: 25.99, popular: false, lookup: "xp_10000"  },
+    { amount: 50000, price: 70.99, popular: false, lookup: "xp_50000"  },
   ]
 
   // Categories for filtering
@@ -131,11 +141,11 @@ export const MarketSection = () => {
             </h1>
             <p className="text-gray-400 mt-2">Personalize your profile with exclusive items</p>
           </div>
-          
+
           <div className="flex items-center gap-4 mt-4 md:mt-0">
             {/* XP INDICATOR */}
-              <XpIndicator xp={userCoins} />
-            <Button 
+            <XpIndicator xp={userCoins} />
+            <Button
               className="flex rounded-full bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 font-semibold hover:opacity-90"
               onClick={() => setShowXpPopup(true)}
             >
@@ -169,8 +179,8 @@ export const MarketSection = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Current Balance:</span>
                   <div className="flex items-center gap-2">
-                    <Coins className="h-5 w-5 text-[#ffca55]" />
-                    <span className="text-xl font-bold">{userCoins} XP</span>
+                    <Boxes className="h-5 w-5 text-purple-500" />
+                    <span className="text-xl font-bold">{Intl.NumberFormat("en").format(userCoins)} XP</span>
                   </div>
                 </div>
               </div>
@@ -182,14 +192,14 @@ export const MarketSection = () => {
                   Free XP - Watch Ads
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Watch a short video ad to earn 100 XP for free!
+                  Watch a short video ad to earn 35 XP for free!
                 </p>
                 <Button
                   onClick={handleWatchAd}
-                  disabled={addXp.isPending}
+                  // disabled={addXp.isPending}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
                 >
-                  {addXp.isPending ? (
+                  {/* {addXp.isPending ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       Watching Ad...
@@ -199,7 +209,7 @@ export const MarketSection = () => {
                       <Video className="h-5 w-5" />
                       Watch Ad & Get 100 XP
                     </div>
-                  )}
+                  )} */}
                 </Button>
               </div>
 
@@ -217,24 +227,23 @@ export const MarketSection = () => {
                   {xpPackages.map((pkg, index) => (
                     <div
                       key={index}
-                      className={`relative p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer ${
-                        pkg.popular
-                          ? "border-[#ffca55] bg-gradient-to-r from-[#ffca55]/10 to-[#FFA100]/10"
+                      className={`relative p-4 rounded-xl border-2 transition-all hover:scale-105 cursor-pointer ${pkg.popular
+                          ? "border-purple-500 bg-gradient-to-r from-purple-700/10 to-purple-100/10"
                           : "border-gray-600 bg-[#252525] hover:border-gray-500"
-                      }`}
-                      onClick={() => handlePurchaseXp(pkg.amount, pkg.price)}
+                        }`}
+                      onClick={() => handlePurchaseXp(pkg.lookup)}
                     >
                       {pkg.popular && (
                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                          <span className="bg-[#ffca55] text-gray-900 text-xs px-2 py-1 rounded-full font-semibold">
+                          <span className="bg-purple-500 text-gray-900 text-xs px-2 py-1 rounded-full font-semibold">
                             MOST POPULAR
                           </span>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Coins className="h-6 w-6 text-[#ffca55]" />
+                          <Boxes className="h-6 w-6 text-purple-500" />
                           <div>
                             <div className="font-semibold text-lg">{pkg.amount.toLocaleString()} XP</div>
                             <div className="text-gray-400 text-sm">Instant delivery</div>
@@ -276,11 +285,11 @@ export const MarketSection = () => {
                 className="w-full pl-10 pr-4 py-3 rounded-full bg-[#252525] border border-gray-700 focus:border-[#ffca55] focus:outline-none"
               />
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
               <span className="text-sm text-gray-400">Filter:</span>
-              <select 
+              <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="rounded-full bg-[#252525] border border-gray-700 text-white px-3 py-2 text-sm focus:border-[#ffca55] focus:outline-none"
@@ -298,11 +307,10 @@ export const MarketSection = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-                  selectedCategory === category.id
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${selectedCategory === category.id
                     ? "bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900"
                     : "bg-[#252525] text-gray-300 hover:bg-[#2d2d2d]"
-                }`}
+                  }`}
               >
                 {category.icon}
                 {category.name}
@@ -315,30 +323,29 @@ export const MarketSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map((item) => {
             const isOwned = ownedItems.includes(item.id)
-            
+
             return (
-              <Card 
-                key={item.id} 
+              <Card
+                key={item.id}
                 className="bg-[#1e1e1e] border border-gray-800 overflow-hidden transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#ffca55]/10"
               >
                 <CardContent className="p-0">
                   {/* Item Image */}
                   <div className="h-40 flex items-center justify-center bg-gradient-to-b from-[#2a2a2a] to-[#1e1e1e] relative">
                     <span className="text-5xl">{item.image}</span>
-                    
+
                     {/* Rarity Badge */}
                     <div className="absolute top-3 right-3">
-                      <span 
-                        className={`text-xs px-2 py-1 rounded-full capitalize ${
-                          item.rarity === "common" ? "bg-gray-600" :
-                          item.rarity === "rare" ? "bg-blue-600" :
-                          item.rarity === "epic" ? "bg-purple-600" : "bg-yellow-600"
-                        }`}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full capitalize ${item.rarity === "common" ? "bg-gray-600" :
+                            item.rarity === "rare" ? "bg-blue-600" :
+                              item.rarity === "epic" ? "bg-purple-600" : "bg-yellow-600"
+                          }`}
                       >
                         {item.rarity}
                       </span>
                     </div>
-                    
+
                     {/* Owned Badge */}
                     {isOwned && (
                       <div className="absolute top-3 left-3 bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -347,22 +354,22 @@ export const MarketSection = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Item Details */}
                   <div className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         {item.price < 500 ? (
-                            <Box className="h-4 w-4 text-purple-400 mr-1" />
+                          <Box className="h-4 w-4 text-purple-400 mr-1" />
                         ) : (
-                         <Boxes className="h-5 w-5 text-purple-600 mr-1" />
+                          <Boxes className="h-5 w-5 text-purple-600 mr-1" />
                         )}
                         <span className="font-semibold">{item.price}</span>
                       </div>
-                      
+
                       {isOwned ? (
-                        <Button 
+                        <Button
                           className="rounded-full bg-green-600 text-white text-sm hover:bg-green-700"
                           disabled
                         >
@@ -370,7 +377,7 @@ export const MarketSection = () => {
                           Owned
                         </Button>
                       ) : (
-                        <Button 
+                        <Button
                           className="rounded-full bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 text-sm hover:opacity-90"
                           onClick={() => handlePurchase(item.id, item.price)}
                         >
@@ -401,7 +408,7 @@ export const MarketSection = () => {
             <Crown className="h-6 w-6 text-[#ffca55]" />
             Featured Items
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl border border-purple-800 p-6 flex flex-col md:flex-row items-center gap-6">
               <div className="text-6xl">🌟</div>
@@ -418,7 +425,7 @@ export const MarketSection = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl border border-blue-800 p-6 flex flex-col md:flex-row items-center gap-6">
               <div className="text-6xl">⚡</div>
               <div>

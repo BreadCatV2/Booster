@@ -1,20 +1,21 @@
 import math
 
 xp = 0
-xp_anuncios = 30
+xp_anuncios = 35
+forzados_dia = 3
+voluntarios_dia = 5 
 
-for anuncios in range(1, xp_anuncios + 1):
+for anuncios in range(1, xp_anuncios + 1): # como maximo voluntarios por dia se pueden ver 35
     xp += (int) (xp_anuncios* (1 / anuncios))
 
-print("xp maxima diaria:" , xp_anuncios * 4 + xp + 6 * 10)
+print("xp maxima diaria:" , xp_anuncios * forzados_dia + xp)
 
 
 MAU = 250e6 #suponiendo cantidad de usuarios que usa discord
 percentage_usuarios_premium=0.03
 
 #Anuncios
-forzados_dia = 6
-voluntarios_dia = 5
+
 
 cpm_f = (3/1000)
 cpm_v = (1.5)/1000

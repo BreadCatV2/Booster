@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { boostTransactions, users } from "@/db/schema";
+import { stripe } from "@/lib/stripe";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, getTableColumns, gte, sql, sum } from "drizzle-orm";
@@ -112,7 +113,7 @@ export const xpRouter = createTRPCRouter({
         })
         .where(and(eq(users.id, userId), gte(users.xp, price)))
         .returning({
-          id: users.id,
+          // id: users.id,
           xp: users.xp,
         });
 
@@ -183,6 +184,47 @@ export const xpRouter = createTRPCRouter({
       .orderBy(desc(sum(boostTransactions.xp)))
 
       return boosters;
+    }),
+
+    buyXp: protectedProcedure
+    .input(z.object({
+      priceLookupKey: z.enum([
+        "xp_500",
+        "xp_1200",
+        "xp_2500",
+        "xp_5500",
+        "xp_10000",
+        "xp_50000",
+      ])
+    }))
+    .mutation(async ({ctx,input}) => {
+      const {user} = ctx;
+
+
+      const prices = await stripe.prices.list({
+        lookup_keys: [input.priceLookupKey],
+        active: true,
+        expand: ["data.product"],
+        limit: 1,
+      })
+
+      const price = prices.data[0];
+      if(!price) throw new TRPCError({code: "BAD_REQUEST", message:"price not found"})
+      
+      const session = await stripe.checkout.sessions.create({
+        mode:'payment',
+        payment_method_types: ['card'],
+        line_items: [{price: price.id, quantity: 1}],
+        success_url: `${process.env.APP_URL ?? "http://localhost:3000"}/market?status=success`,
+        cancel_url: `${process.env.APP_URL ?? "http://localhost:3000"}/market?status=cancel`,
+        client_reference_id: user.id, 
+        metadata: {price_lookup_key: input.priceLookupKey},
+      })
+
+
+      return { url: session.url }
+      
+
     })
 
 

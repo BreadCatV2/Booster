@@ -183,3 +183,19 @@ export const boostTransactions = pgTable("boost_transactions", {
 })
 
 
+export const stripeProcessedEvents = pgTable("stripe_processed_events", {
+  id: text("id").primaryKey(),              // Stripe event.id
+  processedAt: timestamp("processed_at").defaultNow(),
+});
+
+export const xpPurchases = pgTable("xp_purchases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  xp: integer("xp").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  priceLookupKey: text("price_lookup_key").notNull(),
+  paymentIntentId: text("payment_intent_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+
