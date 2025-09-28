@@ -61,10 +61,10 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
   const maxDepth =(home ? 5 : 3); // limit depth on home for performance
 
   const { mutate: createRootComment, isPending } = trpc.comments.create.useMutation({
-    onError: (_e, _v, ctx) => { 
+    onError: () => { 
       toast.error("something went wrong")
     },
-    onSuccess: (serverRow, _v, ctx) => {
+    onSuccess: () => {
       utils.comments.getTopLevel.invalidate(key);
     },
   });

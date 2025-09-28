@@ -20,13 +20,12 @@ interface Video {
 interface SuggestionsSectionProps {
     videos?: Video[];
     title?: string;
-    videoId: string;
+    videoId?: string;
 }
 
 export const SuggestionsSection = ({
     videos = mockVideos,
     title = "Watch next",
-    videoId,
 }: SuggestionsSectionProps) => {
     return (
         <div className="relative py-8">
