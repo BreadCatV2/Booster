@@ -119,7 +119,7 @@ export const UsersView = ({ userId }: Props) => {
   const { onClick, isPending } = useFollow({
     //ignore xd?
     userId: user.id,
-    isFollowing: followers.viewerIsFollowing,
+    isFollowing: followers[0]?.viewerIsFollowing,
   });
 
 
@@ -167,18 +167,18 @@ export const UsersView = ({ userId }: Props) => {
                   </div>
                   <div className="bg-muted/50 p-3 rounded-lg border border-border text-center min-w-[90px] transition-transform">
                     <div className="text-primary font-bold text-lg">
-                      {compactNumber(followers.followsCount)}
+                      {compactNumber(Number(followers[0]?.followsCount) || 0)}
                     </div>
                     <div className="text-muted-foreground text-xs uppercase">
-                      Follower{followers.followsCount === 1 ? "" : "s"}
+                      Follower{followers[0]?.followsCount === 1 ? "" : "s"}
                     </div>
                   </div>
                   <div className="bg-muted/50 p-3 rounded-lg border border-border text-center min-w-[90px]  transition-transform">
                     <div className="text-primary font-bold text-lg">
-                      {compactNumber(creatorViews.creatorViews)}
+                      {compactNumber(creatorViews[0]?.creatorViews || 0)}
                     </div>
                     <div className="text-muted-foreground text-xs uppercase">
-                      View{creatorViews.creatorViews === 1 ? "" : "s"}
+                      View{creatorViews[0]?.creatorViews === 1 ? "" : "s"}
                     </div>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export const UsersView = ({ userId }: Props) => {
                 <SubButton
                   onClick={onClick}
                   disabled={isPending}
-                  isSubscribed={followers.viewerIsFollowing}
+                  isSubscribed={followers[0]?.viewerIsFollowing}
                   className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
                 />
                 <Button

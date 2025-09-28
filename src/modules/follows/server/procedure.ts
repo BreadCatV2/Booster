@@ -27,17 +27,18 @@ export const followsRouter = createTRPCRouter({
       if(user) userId = user.id
 
    
-      const [followers] = await db
+      const followers = await db
         .select({
           id: sql<number>`${creatorId}`.mapWith(Number),
           followsCount: sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${creatorId}) `.mapWith(Number),
           viewerIsFollowing: 
-          (userId ? sql<boolean>`EXISTS ( SELECT 1 FROM ${userFollows} WHERE ${userFollows.creatorId} = ${creatorId} AND ${userFollows.userId} = ${userId} )`.mapWith(Boolean)
+          (userId ? sql<boolean>`( SELECT 1 FROM ${userFollows} WHERE ${userFollows.creatorId} = ${creatorId} AND ${userFollows.userId} = ${userId} )`.mapWith(Boolean)
                 :
           sql<boolean>`NULL`.mapWith(Boolean)),
         })
         .from(userFollows)
-        .where(inArray(userFollows.creatorId, [creatorId]));
+        .where(inArray(userFollows.creatorId, [creatorId]))
+        .limit(1)
 
         // console.log(followers)
 

@@ -13,7 +13,7 @@ export const videoViewsRouter = createTRPCRouter({
 
         const {userId: creatorId} = input;
 
-        const [views] = await db
+        const views = await db
         .select({
             creatorViews: sql<number>`(SELECT SUM (${videoViews.seen}) WHERE ${videos.userId}=${creatorId})`.mapWith(Number),
         })
@@ -21,6 +21,7 @@ export const videoViewsRouter = createTRPCRouter({
         .leftJoin(videos, eq(videos.id, videoViews.videoId))
         .groupBy(videos.userId)
         .where(eq(videos.userId, creatorId))
+        .limit(1)
 
         return views;
     }),
