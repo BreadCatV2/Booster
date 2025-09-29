@@ -96,7 +96,7 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
         <span className="h-10 w-10 rounded-full bg-white dark:bg-[#333333] hover:bg-white/20 dark:hover:bg-[#333333]/80 inline-flex items-center justify-center transition">
           {query.isFetching && !query.isFetchingNextPage
             ? <Spinner variant='circle' className="w-5 h-5" />
-            : (open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />)}
+            : (open ? <ChevronUp className="h-5 w-5" onClick={() => {setOpen(false); onOpenChange?.(false)}} /> : <ChevronDown onClick={() => {setOpen(true);onOpenChange?.(true)}} className="h-5 w-5" />)}
         </span>
       </div>
 

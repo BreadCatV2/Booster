@@ -19,7 +19,7 @@ export const HomeLayout = ({children}: HomeLayoutProps) => {
                         {children}
                     </main>
                 </div>
-                <ExplorerSidebar  collapsible="offcanvas" variant="floating"/>
+                <ExplorerSidebar  collapsible="offcanvas" variant="sidebar"/>
             </div>
         </SidebarProvider>
     )

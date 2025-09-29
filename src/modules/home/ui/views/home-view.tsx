@@ -294,12 +294,14 @@ export const HomeViewSuspense = () => {
         >
           <ChevronRight className="h-6 w-6" />
         </motion.button>
-        <InfiniteScroll
-          isManual
-          hasNextPage={query.hasNextPage}
-          isFetchingNextPage={query.isFetchingNextPage}
-          fetchNextPage={query.fetchNextPage}
-        />
+        <div className="hidden">
+          <InfiniteScroll
+            isManual
+            hasNextPage={query.hasNextPage}
+            isFetchingNextPage={query.isFetchingNextPage}
+            fetchNextPage={query.fetchNextPage}
+          />
+        </div>
       </div>
 
 
