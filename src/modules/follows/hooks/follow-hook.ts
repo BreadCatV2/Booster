@@ -12,7 +12,7 @@ export const useFollow = ({ userId, isFollowing, fromVideoId }: Props) => {
     const clerk = useClerk();
     const utils = trpc.useUtils();
     const follow = trpc.follows.create.useMutation({
-        onMutate: async ({ userId }) => {
+        onMutate: async ({ }) => {
             if(fromVideoId){ 
 
                 await utils.videos.getOne.cancel({ id: fromVideoId });
@@ -49,7 +49,7 @@ export const useFollow = ({ userId, isFollowing, fromVideoId }: Props) => {
     });
 
     const unfollow = trpc.follows.delete.useMutation({
-        onMutate: async ({ userId }) => {
+        onMutate: async ({ }) => {
             if (fromVideoId) {
                 await utils.videos.getOne.cancel({ id: fromVideoId });
                 const previous =  utils.videos.getOne.getData({ id: fromVideoId });
