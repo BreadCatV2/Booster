@@ -46,12 +46,6 @@ export const HomeViewSuspense = () => {
   const [videoIndex, setVideoIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
-  // Swipe state
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-
-  const minSwipeDistance = 50;
-
   const utils = trpc.useUtils();
 
   // Prefetch video data
@@ -70,32 +64,7 @@ export const HomeViewSuspense = () => {
       document.body.style.overflow = prev;
     };
   }, []);
-
-  // Simple swipe handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(0);
-    setTouchStart(e.targetTouches[0].clientX);
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      goToNextVideo();
-    }
-
-    if (isRightSwipe) {
-      goToPrevVideo();
-    }
-  }
+ 
 
   const goToNextVideo = () => {
     console.log("NEXT")
@@ -175,11 +144,7 @@ export const HomeViewSuspense = () => {
 
             {/* Swipeable area - Only ONE video rendered at a time */}
             <div
-              className="w-full h-full relative touch-pan-y"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{ touchAction: 'pan-y' }}
+              className="w-full h-full relative"
             >
               <AnimatePresence custom={direction} mode="wait" initial={false}>
                 <motion.div

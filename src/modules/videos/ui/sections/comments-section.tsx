@@ -33,7 +33,7 @@ export const CommentsSection = (props: CommentSectionProps) => {
 
 const CommentsSkeleton = () => (
   <div className="h-full flex flex-col">
-    <div className="h-[70px] px-5 flex items-center justify-between border-b border-white/10">
+    <div className="h-[30px] px-5 flex items-center justify-between border-b border-white/10">
       <div className="h-6 w-40 bg-white/10 rounded animate-pulse" />
       <div className="h-10 w-10 bg-white/10 rounded-full animate-pulse" />
     </div>
@@ -58,7 +58,7 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
 
   const viewer = rootComments.pages[0].viewer;
   const key = { videoId, limit: COMMENT_SECTION_SIZE };
-  const maxDepth =(home ? 5 : 3); // limit depth on home for performance
+  const maxDepth =(home ? 3 : 3); // limit depth on home for performance
 
   const { mutate: createRootComment, isPending } = trpc.comments.create.useMutation({
     onError: () => { 
@@ -82,14 +82,14 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
   return (
     <div className="h-full flex flex-col overflow-hidden "
 
-        // onMouseLeave={()=>{if(!home) return; setOpen(false); onOpenChange?.(false)}}
-        onClick={()=>{if(!home) return; setOpen(true);onOpenChange?.(true)}}
+        onMouseLeave={()=>{if(!home) return; setOpen(false); }}
+        onMouseEnter={()=>{if(!home) return; setOpen(true);}}
     >
       {/* HEADER — fixed 70px, matches home.html */}
       <div
-        className="h-[60px] p-3 flex items-center justify-between border-b border-white/10 hover:cursor-pointer"
+        className=" p-3 flex items-center justify-between border-b border-white/10 hover:cursor-pointer"
       >
-        <h2 className="text-[1.1rem] font-semibold flex items-center gap-2  ml-2 text-gray-900 dark:text-white">
+        <h2 className="text-[1.1rem] font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
           <MessageCircle className="w-5 h-5 text-gray-900 dark:text-white" />
           <span>Comments {compactNumber(rootComments.pages[0].commentCount ?? 0)}</span>
         </h2>
@@ -114,7 +114,7 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
               <CommentInput viewer={viewer} createComment={createComment} isPending={isPending}/>
             </div>
 
-            <div className="flex flex-col overflow-y-auto px-3 py-4 space-y-1">
+            <div className="flex flex-col flex-1 px-3 py-4 space-y-1">
               {items.map(c => (
                 <Comment
                   key={c.commentId}

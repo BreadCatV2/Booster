@@ -1,11 +1,11 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { compactNumber } from '@/lib/utils';
+import { cn, compactNumber } from '@/lib/utils';
 
 import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
 import { CommentsSection } from '@/modules/videos/ui/sections/comments-section';
-import { Eye, Play,  } from 'lucide-react';
+import { Eye, Play, } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 ;
 import { useAuth } from '@clerk/nextjs';
@@ -103,19 +103,16 @@ const VideoSectionSkeleton = () => {
 };
 
 export const VideoSectionSuspense = ({ videoId }: Props) => {
-
     const [video] = trpc.videos.getOne.useSuspenseQuery({ id: videoId })
     const [boostPoints] = trpc.xp.getBoostByVideoId.useSuspenseQuery({ videoId })
 
-
-    const [commentsOpen, setCommentsOpen] = useState(false);
-    const { isSignedIn, } = useAuth();
+    const [commentsOpen, setCommentsOpen] = useState(true);
+    const { isSignedIn } = useAuth();
     const [showTitle, setShowTitle] = useState(true);
     const [isPlaying, setIsPlaying] = useState(true);
     const videoPlayerRef = useRef<{ play: () => void; pause: () => void }>(null);
 
     const utils = trpc.useUtils();
-
 
     useEffect(() => {
         const t = setTimeout(() => setShowTitle(false), 4000);
@@ -134,9 +131,6 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
         createView.mutate({ videoId: video.id });
     };
     const handlePause = () => setIsPlaying(false);
-
-    // When open, comments panel is 40vh (desktop) / 50vh (mobile). When closed, 70px.
-    const collapsedPx = 60;
 
     const createRating = trpc.videoRatings.create.useMutation({
         onSuccess: () => {
@@ -159,13 +153,18 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
     }
 
     return (
-        <div className="h-full w-full flex flex-col gap-2 overflow-hidden">
+        <div className="h-full w-full flex flex-col overflow-hidden">
+            {/* FIXED VIDEO PLAYER */}
+            <motion.div
+                className={cn("flex-none relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm")}
+                initial={false}
+                animate={{ height: commentsOpen ? '52vh' : '75vh' }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                onMouseEnter={() => setShowTitle(true)}
+                onMouseLeave={() => setShowTitle(false)}
+            >
 
-
-            {/* VIDEO AREA */}
-            <div className="relative flex-1 rounded-2xl max-h-[85%] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm" onMouseEnter={() => setShowTitle(true)} onMouseLeave={() => setShowTitle(false)} >
-
-                {/* Floating title on pause / first seconds  TODO: quitar el titulo*/}
+                {/* Your existing video player content */}
                 <AnimatePresence>
                     {(!isPlaying || showTitle) && (
                         <>
@@ -205,16 +204,7 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
                                 </motion.div>
                             </div>
 
-                            {/* Desktop Title */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                transition={{ duration: 0.5, ease: 'easeInOut' }}
-                                className="hidden sm:block sm:absolute top-6 left-6 z-10"
-                            >
-                                <p className='text-2xl font-semibold text-gray-900 dark:text-white line-clamp-1'>{video.title} </p>
-                            </motion.div>
+
                         </>
                     )}
                 </AnimatePresence>
@@ -228,7 +218,6 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
                         onPause={handlePause}
                         playbackId={video.muxPlaybackId}
                         thumbnailUrl={video.thumbnailUrl}
-
                     />
 
                     {/* Play button overlay */}
@@ -252,100 +241,52 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
                         )}
                     </AnimatePresence>
                 </div>
-
-
-
-                {/* 
-                <div className="flex items-start gap-2">
-
-                    <div className="inline-flex items-center gap-2 bg-white dark:bg-[#333333] border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-full text-gray-700 dark:text-gray-300">
-                        <Eye className="h-4 w-4" /><span className="font-medium">{compactNumber(video.videoViews)}</span>
-                    </div>
-                    <VideoReactions avgRating={video.averageRating} videoRatings={video.videoRatings} onRate={onRate} viewerRating={video.user.viewerRating} />
-                    <div className='ml-1'>
-
-                        <VideoMenu variant='secondary' videoId={video.id} />
-                    </div>
-                </div> */}
-
-            </div>
-
-            {/* TOP ROW Large*/}
-            <div className='hidden sm:flex items-start justify-between'>
-                <div className="flex flex-col sm:items-start sm:justify-between gap-3 ml-2 flex-1">
-                    <VideoOwner user={video.user} videoId={video.id} boostPoints={Number(boostPoints.boostPoints)} />
-
-
-                    {/*
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <VideoOwner user={video.user} videoId={video.id} boostPoints={Number(boostPoints.boostPoints)} />
-
-
-                        <div className="flex items-center bg-white dark:bg-[#333333] rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-700 shadow-sm flex-1">
-                            <div className="flex items-center gap-3">
-                                <UserAvatar size="lg" imageUrl={video.user.imageUrl} name={video.user.name} className="ring-2 ring-white shadow-sm" />
-                                <div className="flex-1">
-                                    <div className='flex items-center gap-2'>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">{video.user?.name ?? 'Channel Name'}</h3>
-                                    </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">{compactNumber(video.user.followsCount)} followers</p>
-                                </div>
-                                <div className='ml-2'>
-                                    {userId === video.user.clerkId ? (
-                                        <Button asChild variant="outline" size="sm" className="rounded-full gap-2 p-4 shadow-sm hover:shadow-md border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                            <a href={`/studio/videos/${video.id}`}>
-                                                <Edit3Icon className="size-4" /><p>Edit</p>
-                                            </a>
-                                        </Button>
-                                    ) : (
-                                        <SubButton
-                                            onClick={onClick}
-                                            disabled={false}
-                                            isSubscribed={video.user.viewerIsFollowing}
-                                            className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-
-                    </div>
-*/}
-                </div>
-
-
-                <div className="flex items-start gap-5">
-
-                    <div className="inline-flex items-center gap-2 bg-white dark:bg-[#333333] border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-full text-gray-700 dark:text-gray-300">
-                        <Eye className="h-4 w-4" /><span className="font-medium">{compactNumber(video.videoViews)}</span>
-                    </div>
-                    <VideoReactions avgRating={video.averageRating} videoRatings={video.videoRatings} onRate={onRate} viewerRating={video.user.viewerRating} small />
-                    <div className='ml-1'>
-                        <VideoMenu variant='secondary' videoId={video.id} />
-                    </div>
-                </div>
-            </div>
-
-
-
-
-            {/* COMMENTS PANEL */}
-            <motion.div
-                className="flex-initial rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#333333] backdrop-blur-md overflow-hidden shadow-sm"
-                initial={false}
-                animate={{ height: commentsOpen ? '45vh' : collapsedPx }}
-                transition={{ duration: 0.35, ease: 'easeInOut' }}
-            >
-
-
-                <CommentsSection
-                    home
-                    videoId={video.id}
-                    openComments={commentsOpen}
-                    onOpenChange={setCommentsOpen}
-                />
             </motion.div>
-        </div>
+
+            {/* SCROLLABLE CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto scrollbar-default">
+                {/* TOP ROW Large*/}
+                <div className='hidden sm:flex items-start justify-between mb-1'>
+                    <div className="flex flex-col sm:items-start sm:justify-between gap-2 flex-1 mb-2 ">
+                        {/* Desktop Title */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        >
+                            <p className='text-2xl font-semibold text-gray-900 dark:text-white line-clamp-1'>{video.title} AAA </p>
+                        </motion.div>
+                        <VideoOwner user={video.user} videoId={video.id} boostPoints={Number(boostPoints.boostPoints)} />
+                    </div>
+
+                    <div className="flex items-start gap-5 mt-3 mr-5">
+                        <div className="inline-flex items-center gap-2 bg-white dark:bg-[#333333] border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-full text-gray-700 dark:text-gray-300">
+                            <Eye className="h-4 w-4" /><span className="font-medium">{compactNumber(video.videoViews)}</span>
+                        </div>
+                        <VideoReactions avgRating={video.averageRating} videoRatings={video.videoRatings} onRate={onRate} viewerRating={video.user.viewerRating} small />
+                        <div className='ml-1'>
+                            <VideoMenu variant='secondary' videoId={video.id} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* COMMENTS PANEL */}
+                <motion.div
+                    className="flex-1 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#333333] backdrop-blur-md shadow-sm "
+                    initial={false}
+                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    onMouseEnter={() => setCommentsOpen(true)}
+                    onMouseLeave={() => setCommentsOpen(false)}
+                >
+                    <CommentsSection
+                        home
+                        videoId={video.id}
+                        openComments={commentsOpen}
+                        onOpenChange={setCommentsOpen}
+                    />
+                </motion.div>
+            </div>
+        </div >
     );
 };

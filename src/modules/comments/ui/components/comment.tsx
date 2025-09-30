@@ -44,7 +44,6 @@ const getUserIcon = (user: User, isCommentOwner?: boolean) => {
     //     return <Contact className="w-3 h-3 text-[#ffca55]" />;
     // }
     // Default icon or return null for no icon
-    console.log(user,isCommentOwner)
     return <Zap className="w-3 h-3 text-gray-400" />;
 };
 
@@ -97,7 +96,6 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
             toast.error("something went wrong")
         },
         onSuccess: (data) => {
-            console.log("LA DATA", data)
             utils.comments.getTopLevel.invalidate({ videoId, limit: COMMENT_SECTION_SIZE });
             utils.comments.getReplies.invalidate({commentId:parentComment.commentId, videoId, limit: COMMENT_REPLIES_SIZE});
 
@@ -231,7 +229,6 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
     const addCommentReply = (commentId: string, replyText: string) => {
         if (!isSignedIn) return clerk.openSignIn();
         setOpen(true);
-        console.log("ADDING")
         commentAddReply({ parentId: replyingTo, videoId, comment: replyText });
         setReplyingTo("")
     }
