@@ -41,7 +41,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
 
                 <template
                     id="media-theme-sutro"
-                    dangerouslySetInnerHTML={{ __html: `
+                    dangerouslySetInnerHTML={{
+                        __html: `
 <!-- Sutro -->
 <style>
 :host {
@@ -863,13 +864,12 @@ translate: 4% 4%;
                         }}
                     />
                 </MediaTheme> */}
-
-                <MuxPlayer 
-                
-                    // @ts-ignore
-                    ref={videoRef} //ignore xD
-                    theme="media-theme-sutro"
-                    className='h-full w-full'
+               
+                    <MuxPlayer
+                        // @ts-ignore
+                        ref={videoRef}
+                        theme="media-theme-sutro"
+                        className="w-full h-full "
                         slot="media"
                         playbackId={playbackId}
                         playsInline
@@ -879,44 +879,17 @@ translate: 4% 4%;
                         poster={thumbnailUrl || THUMBNAIL_FALLBACK}
                         autoPlay={autoPlay}
                         loop
-                />
+                    />
+
+                    <div className='mt-10 video-border-wrapper'>
+                    A
+                    </div>
 
                 {/* Additional custom styles */}
-                <style jsx>{`
-                   
 
-                    media-controller {
-                        border-radius: 16px;
-                        overflow: hidden;
-                        --media-control-background: rgba(0, 0, 0, 0.7);
-                        --media-range-bar-color: linear-gradient(90deg, #ffb700, #ff6b00);
-                    }
-
-                    media-time-display {
-                        background: linear-gradient(135deg, #ffb700, #ff6b00) !important;
-                        -webkit-background-clip: text !important;
-                        background-clip: text !important;
-                        -webkit-text-fill-color: transparent !important;
-                        font-weight: 600;
-                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-                    }
-
-                    media-time-range {
-                        --media-range-track-background: rgba(255, 255, 255, 0.2);
-                        --media-range-bar-color: linear-gradient(90deg, #ffb700, #ff6b00);
-                    }
-
-                    .media-button {
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    }
-
-                    .media-button:hover {
-                        transform: scale(1.15);
-                        background: rgba(255, 255, 255, 0.2);
-                    }
-                `}</style>
+              
             </>
-        )   
+        )
     }
 );
 

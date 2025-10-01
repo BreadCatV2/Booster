@@ -58,8 +58,8 @@ export const MainSection = () => {
     }, []);
 
     return (
-        <SidebarGroup className="relative">
-            <SidebarGroupContent className="relative z-10">
+        <SidebarGroup className="relative bg-background">
+            <SidebarGroupContent className="relative z-10 bg-background">
                 <SidebarMenu>
                     {items.map((item) => {
                         const isActive = activeItem === item.title;

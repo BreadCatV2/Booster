@@ -8,7 +8,7 @@ import { DEFAULT_LIMIT } from "@/constants";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { ErrorBoundary } from "react-error-boundary";
 import { useSwipeable } from 'react-swipeable';
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NoVideosEmptyState } from "../components/no-more-videos";
 
 export const HomeView = () => {
   return (
@@ -21,10 +21,8 @@ export const HomeView = () => {
 }
 
 const VideoSectionSkeleton = () => {
-  // ... keep your existing skeleton code
   return (
     <div className="h-full w-full flex flex-col gap-4 overflow-hidden animate-pulse">
-      {/* Your existing skeleton code */}
     </div>
   );
 };
@@ -63,7 +61,6 @@ export const HomeViewSuspense = () => {
       document.body.style.overflow = prev;
     };
   }, []);
-
 
   const goToNextVideo = () => {
     console.log("NEXT")
@@ -104,6 +101,7 @@ export const HomeViewSuspense = () => {
       opacity: 0,
     }),
   };
+  
   const handlers = useSwipeable({
     onSwipedLeft: goToNextVideo,
     onSwipedRight: goToPrevVideo,
@@ -111,35 +109,16 @@ export const HomeViewSuspense = () => {
     swipeDuration: 500,
     preventScrollOnSwipe: true,
   });
+
   return (
-    <div {...handlers} className="h-dvh w-full flex flex-col overflow-hidden bg-[#f8f9fa] dark:bg-[#212121]">
+    <div {...handlers} className="h-dvh w-full flex flex-col overflow-hidden bg-background">
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden gap-1">
         <main className="flex-1 mb-6 overflow-hidden">
           <div className="flex justify-center mx-auto max-w-full h-[95%] relative">
 
-            {/* Swipe Indicators */}
-            <motion.div
-              className="hidden sm:absolute sm:block sm:left-4 sm:top-[40%] z-40"
-              onClick={() => goToPrevVideo()}
-            >
-
-              <div className="bg-dark/70 dark:bg-white/70 rounded-full p-3 hover:cursor-pointer hover:scale-105 dark:hover:bg-amber-300/90 hover:bg-white/20 transition-all duration-200 ease-in-out">
-                <ChevronLeft className="h-6 w-6 text-white dark:text-white" />
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="hidden sm:block sm:absolute right-4 top-[40%] z-40"
-              onClick={() => goToNextVideo()}
-            >
-              <div className="bg-dark/70 dark:bg-white/70 rounded-full p-3 hover:cursor-pointer hover:scale-105 dark:hover:bg-amber-300/90 hover:bg-white/20 transition-all duration-200 ease-in-out">
-                <ChevronRight className="h-6 w-6 text-white dark:text-white" />
-              </div>
-            </motion.div>
-
             {/* Swipeable area - Only ONE video rendered at a time */}
-            <div className="w-full h-full relative">
+            <div className="w-full h-full relative" >
               <AnimatePresence custom={direction} mode="wait" initial={false}>
                 <motion.div
                   key={videoIndex}
@@ -152,13 +131,9 @@ export const HomeViewSuspense = () => {
                   className="w-full h-full absolute inset-0"
                 >
                   {videoIndex < videos.length ? (
-                    <VideoSection videoId={videos[videoIndex].id} />
+                    <VideoSection videoId={videos[videoIndex].id} next={goToNextVideo} prev={goToPrevVideo}/>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <p className="text-gray-600 dark:text-gray-300">
-                        No more videos
-                      </p>
-                    </div>
+                    <NoVideosEmptyState />
                   )}
                 </motion.div>
               </AnimatePresence>

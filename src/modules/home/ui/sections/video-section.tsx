@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, Suspense, useEffect, useRef, useState } from 'react';
 import { cn, compactNumber } from '@/lib/utils';
 
 import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
 import { CommentsSection } from '@/modules/videos/ui/sections/comments-section';
-import { Eye, Play, } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Play, } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 ;
 import { useAuth } from '@clerk/nextjs';
@@ -20,14 +20,19 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { UserAvatar } from '@/components/user-avatar';
 
 
-interface Props { videoId: string; }
+interface Props {
+    videoId: string;
+    next(): void;
+    prev(): void;
+
+}
 
 
-export const VideoSection = ({ videoId }: Props) => {
+export const VideoSection = ({ videoId,next,prev }: Props) => {
     return (
         <Suspense fallback={<VideoSectionSkeleton />}>
             <ErrorBoundary fallback={<p>Failed to load video :(</p>}>
-                <VideoSectionSuspense videoId={videoId} />
+                <VideoSectionSuspense videoId={videoId} next={next} prev={prev} />
             </ErrorBoundary>
         </Suspense>
     )
@@ -102,7 +107,7 @@ const VideoSectionSkeleton = () => {
     );
 };
 
-export const VideoSectionSuspense = ({ videoId }: Props) => {
+export const VideoSectionSuspense = ({ videoId, next,prev }: Props) => {
     const [video] = trpc.videos.getOne.useSuspenseQuery({ id: videoId })
     const [boostPoints] = trpc.xp.getBoostByVideoId.useSuspenseQuery({ videoId })
 
@@ -156,9 +161,9 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
         <div className="h-full w-full flex flex-col overflow-hidden">
             {/* FIXED VIDEO PLAYER */}
             <motion.div
-                className={cn("flex-none relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm")}
+                className={cn("flex-none relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm min-h-[50%]")}
                 initial={false}
-                animate={{ height: commentsOpen ? '52vh' : '75vh' }}
+                animate={{ height: commentsOpen ? '50%' : '72%' }}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
                 onMouseEnter={() => setShowTitle(true)}
                 onMouseLeave={() => setShowTitle(false)}
@@ -204,13 +209,34 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
                                 </motion.div>
                             </div>
 
+                            <>
+                                <motion.div
+                                    className="hidden sm:absolute sm:block sm:left-4 sm:top-[40%] z-40"
+                                    onClick={prev}
+                                >
+
+                                    <div className="bg-transparent rounded-full p-3 hover:cursor-pointer hover:scale-105 dark:hover:bg-white/30 hover:bg-white/20 transition-all duration-200 ease-in-out">
+                                        <ChevronLeft className="h-6 w-6 text-white dark:text-white" />
+                                    </div>
+                                </motion.div>
+
+                                <motion.div
+                                    className="hidden sm:block sm:absolute right-4 top-[40%] z-40"
+                                    onClick={next}
+                                >
+                                    <div className="bg-transparent rounded-full p-3 hover:cursor-pointer hover:scale-105 dark:hover:bg-white/30 hover:bg-white/20 transition-all duration-200 ease-in-out">
+                                        <ChevronRight className="h-6 w-6 text-white dark:text-white" />
+                                    </div>
+                                </motion.div>
+                            </>
 
                         </>
                     )}
                 </AnimatePresence>
 
                 {/* Player fills container */}
-                <div className="absolute inset-0">
+                <div className="absolute inset-0"
+                >
                     <VideoPlayer
                         ref={videoPlayerRef}
                         autoPlay={isPlaying}
@@ -218,6 +244,7 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
                         onPause={handlePause}
                         playbackId={video.muxPlaybackId}
                         thumbnailUrl={video.thumbnailUrl}
+
                     />
 
                     {/* Play button overlay */}
@@ -273,7 +300,7 @@ export const VideoSectionSuspense = ({ videoId }: Props) => {
 
                 {/* COMMENTS PANEL */}
                 <motion.div
-                    className="flex-1 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#333333] backdrop-blur-md shadow-sm "
+                    className={cn(`flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#212121] backdrop-blur-md shadow-sm `,commentsOpen ? '' : 'h-full')}
                     initial={false}
                     transition={{ duration: 0.35, ease: 'easeInOut' }}
                     onMouseEnter={() => setCommentsOpen(true)}

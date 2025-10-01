@@ -92,7 +92,7 @@ export const ExplorerNavBar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md flex items-center px-4 z-50 border-b border-border/50 transition-all ${
+      className={`fixed top-0 left-0 right-0 h-16 bg-background backdrop-blur-md flex items-center px-4 z-50 border-b border-border/50 transition-all ${
         isScrolled ? "shadow-sm" : ""
       }`}
     >

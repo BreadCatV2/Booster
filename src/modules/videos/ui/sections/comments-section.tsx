@@ -18,7 +18,7 @@ interface CommentSectionProps {
   videoId: string;
   openComments: boolean;
   onOpenChange?: (open: boolean) => void;
-  home:boolean;
+  home: boolean;
 }
 
 export const CommentsSection = (props: CommentSectionProps) => {
@@ -41,7 +41,7 @@ const CommentsSkeleton = () => (
   </div>
 );
 
-export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: CommentSectionProps) => {
+export const CommentsSuspense = ({ videoId, openComments, onOpenChange, home }: CommentSectionProps) => {
   const clerk = useClerk();
   const utils = trpc.useUtils();
   const { isSignedIn } = useAuth();
@@ -58,10 +58,10 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
 
   const viewer = rootComments.pages[0].viewer;
   const key = { videoId, limit: COMMENT_SECTION_SIZE };
-  const maxDepth =(home ? 3 : 3); // limit depth on home for performance
+  const maxDepth = (home ? 3 : 3); // limit depth on home for performance
 
   const { mutate: createRootComment, isPending } = trpc.comments.create.useMutation({
-    onError: () => { 
+    onError: () => {
       toast.error("something went wrong")
     },
     onSuccess: () => {
@@ -77,65 +77,83 @@ export const CommentsSuspense = ({ videoId, openComments, onOpenChange,home }: C
   // Controlled open mirror (header always visible at 70px)
   const [open, setOpen] = useState(openComments);
   useEffect(() => setOpen(openComments), [openComments]);
-  
+
 
   return (
-    <div className="h-full flex flex-col overflow-hidden "
+    <div className="h-full flex-1 flex-col overflow-hidden border-red-300 "
 
-        onMouseLeave={()=>{if(!home) return; setOpen(false); }}
-        onMouseEnter={()=>{if(!home) return; setOpen(true);}}
+      onMouseLeave={() => { if (!home) return; setOpen(false); }}
+      onMouseEnter={() => { if (!home) return; setOpen(true); }}
     >
-      {/* HEADER — fixed 70px, matches home.html */}
+      {/* HEADER — always visible */}
       <div
-        className=" p-3 flex items-center justify-between border-b border-white/10 hover:cursor-pointer"
+        className="h-[70px] p-3 flex items-start justify-between border-b border-white/10 hover:cursor-pointer"
       >
         <h2 className="text-[1.1rem] font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
           <MessageCircle className="w-5 h-5 text-gray-900 dark:text-white" />
           <span>Comments {compactNumber(rootComments.pages[0].commentCount ?? 0)}</span>
         </h2>
-        <span className="h-10 w-10 rounded-full bg-white dark:bg-[#333333] hover:bg-white/20 dark:hover:bg-[#333333]/80 inline-flex items-center justify-center transition">
+        <span className="h-10 w-10 rounded-full bg-white dark:bg-[#212121] hover:bg-white/20 dark:hover:bg-[#333333]/80 inline-flex items-center justify-center transition">
           {query.isFetching && !query.isFetchingNextPage
             ? <Spinner variant='circle' className="w-5 h-5" />
-            : (open ? <ChevronUp className="h-5 w-5" onClick={() => {setOpen(false); onOpenChange?.(false)}} /> : <ChevronDown onClick={() => {setOpen(true);onOpenChange?.(true)}} className="h-5 w-5" />)}
+            : (open ? <ChevronUp className="h-5 w-5" onClick={() => { setOpen(false); onOpenChange?.(false) }} /> : <ChevronDown onClick={() => { setOpen(true); onOpenChange?.(true) }} className="h-5 w-5" />)}
         </span>
       </div>
 
       {/* CONTENT — fills remaining height INSIDE this panel; scrolls internally */}
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className=" min-h-0 max-w-[95%] flex flex-col"
-          >
-            <div className="px-5  border-b border-white/10">
-              <CommentInput viewer={viewer} createComment={createComment} isPending={isPending}/>
-            </div>
+      {/* CONTENT — fills remaining space whether open or closed */}
+      <div className="flex-1 min-h-0 flex flex-col"> {/* Always take remaining space */}
+        <AnimatePresence initial={false}>
+          {open ? (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex-1 overflow-y-auto min-h-0 flex flex-col" /* Fill available height */
+            >
+              <div className="px-5 border-b border-white/10">
+                <CommentInput viewer={viewer} createComment={createComment} isPending={isPending} />
+              </div>
 
-            <div className="flex flex-col flex-1 px-3 py-4 space-y-1">
-              {items.map(c => (
-                <Comment
-                  key={c.commentId}
-                  parentComment={c}
-                  videoId={videoId}
-                  viewer={viewer}
-                  isPending={isPending}
-                  depth={1}
-                  maxDepth={maxDepth}
-                />
-              ))}
-              <InfiniteScroll
-                isManual={false}
-                hasNextPage={query.hasNextPage}
-                isFetchingNextPage={query.isFetchingNextPage}
-                fetchNextPage={query.fetchNextPage}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="flex-1 min-h-0 overflow-y-auto"> {/* Scrollable comments area */}
+                <div className="px-3 py-4 space-y-1">
+                  {items.map(c => (
+                    <Comment
+                      key={c.commentId}
+                      parentComment={c}
+                      videoId={videoId}
+                      viewer={viewer}
+                      isPending={isPending}
+                      depth={1}
+                      maxDepth={maxDepth}
+                    />
+                  ))}
+                  <InfiniteScroll
+                    isManual={false}
+                    hasNextPage={query.hasNextPage}
+                    isFetchingNextPage={query.isFetchingNextPage}
+                    fetchNextPage={query.fetchNextPage}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="closed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 min-h-0 h-[100%] flex items-center justify-center text-gray-500 dark:text-gray-400"
+            >
+              <div className="mt-1 flex flex-col items-center text-center">
+                <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Hover to view comments</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
