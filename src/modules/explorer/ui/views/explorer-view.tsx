@@ -129,7 +129,6 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
   const featuredVideo = videos.find(v => v.isFeatured);
 
 
-  console.log("V",videos)
 
 
   return (

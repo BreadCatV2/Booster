@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Loader2Icon, PlusIcon } from 'lucide-react';
-import { StudioBunnyUploader } from './studio-bunny-uploader';
+import { StudioBunnyUploader } from './studio-uploader';
 
 export const StudioUploadModal = () => {
 
@@ -55,7 +55,7 @@ export const StudioUploadModal = () => {
         Create
       </Button>
 
-      <ResponsiveModal open={open} title='Upload video' onOpenChange={setOpen}>
+      <ResponsiveModal open={open} title='Upload video' onOpenChange={setOpen} >
         <StudioBunnyUploader />
       </ResponsiveModal>
     </>

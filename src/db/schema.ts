@@ -40,6 +40,12 @@ export const videoVisibility = pgEnum("video_visibility", [
     'public',
 ])
 
+export const videoStatus = pgEnum("video_status", [
+    'error',
+    'processing',
+    'completed'
+])
+
 export const videos = pgTable("videos", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: text().notNull(),
@@ -52,21 +58,22 @@ export const videos = pgTable("videos", {
     // muxTrackId: text("mux_track_id").unique(), // for subtitles
     // muxTrackStatus: text("mux_track_status"), //for subtitles
 
+    playbackUrl: text("playback_url"),
+
     thumbnailUrl: text("thumbnail_url"),
     thumbnailKey: text("thumbnail_key"),
 
     previewUrl: text("preview_url"),
     previewKey: text("preview_key"),
 
-    bunnyVideoId: text("bunny_video_id").unique(),        
-    bunnyLibraryId: text("bunny_library_id"),             
-    bunnyStatus: text("bunny_status"),                    
-    bunnyDuration: integer("bunny_duration"),             
+    // bunnyVideoId: text("bunny_video_id").unique(),        
+    // bunnyLibraryId: text("bunny_library_id"),             
+    // bunnyStatus: text("bunny_status"),                    
+    // bunnyDuration: integer("bunny_duration"),             
 
     duration: integer("duration").default(0).notNull(),
     visibility: videoVisibility('visibility').default('private').notNull(),
-
-
+    status: videoStatus().default('processing').notNull(),
 
     userId: uuid("user_id").references(() => users.id, {
         onDelete: 'cascade',

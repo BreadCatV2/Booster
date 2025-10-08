@@ -110,6 +110,7 @@ export const HomeViewSuspense = () => {
     preventScrollOnSwipe: true,
   });
 
+
   return (
     <div {...handlers} className="h-dvh w-full flex flex-col overflow-hidden bg-background">
       {/* Main content */}

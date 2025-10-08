@@ -10,11 +10,19 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "image.mux.com" },   // Mux poster/thumbnail
       { protocol: "https", hostname: "assets.mux.com" },  // (optional) storyboards, etc.
+      // {
+      //   protocol: "https",
+      //   hostname: process.env.NEXT_PUBLIC_BUNNY_PULLZONE_HOST || "vz-a1724747-84f.b-cdn.net",
+      //   pathname: "/**",
+      // },
+      
+      //FOR AWS
       {
         protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_BUNNY_PULLZONE_HOST || "vz-a1724747-84f.b-cdn.net",
+        hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
+
       // {protocol: "https", hostname: ""}
       // { protocol: "https", hostname: "" },  // TODO: upload thing
     ],

@@ -45,7 +45,7 @@ import Image from "next/image";
 import { THUMBNAIL_FALLBACK } from "@/modules/videos/constants";
 import { ThumbnailUploadModal} from "../components/thumbnail-upload-modal";
 import { format } from "date-fns";
-import { BunnyEmbed } from "@/modules/videos/ui/views/BunnyEmbed";
+import Player from "@/modules/videos/ui/sections/Player";
 
 interface PageProps {
     videoId: string;
@@ -417,7 +417,8 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                         playbackId={video.muxPlaybackId}
                                         thumbnailUrl={video.thumbnailUrl}
                                     /> */}
-                                    <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} />
+                                    {/* <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> */}
+                                    <Player src={video.playbackUrl} />
                                 </div>
                                 
                                 {/* Video Stats */}
@@ -482,10 +483,10 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">Video Status</p>
                                             <div className="flex items-center">
                                                 <div className={`h-2 w-2 rounded-full mr-2 ${
-                                                    video.bunnyStatus === 'finished' ? 'bg-green-500' : 
-                                                    video.bunnyStatus === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
+                                                    video.status === 'completed' ? 'bg-green-500' : 
+                                                    video.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
                                                 }`}></div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">{snakeCaseToTitle(video.bunnyStatus || "Preparing")}</p>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">{snakeCaseToTitle(video.status || "Preparing")}</p>
                                             </div>
                                         </div>
                                         
@@ -493,8 +494,8 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">Subtitles Status</p>
                                             <div className="flex items-center">
                                                 <div className={`h-2 w-2 rounded-full mr-2 ${
-                                                    video.bunnyStatus === 'resolution_finished' ? 'bg-green-500' : 
-                                                    video.bunnyStatus !== 'finished' ? 'bg-yellow-500' : 'bg-gray-500'
+                                                    video.status === 'completed' ? 'bg-green-500' : 
+                                                    video.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
                                                 }`}></div>
                                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{"No Subtitles"}</p>
                                             </div>

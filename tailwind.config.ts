@@ -15,7 +15,7 @@ export default withUt({
   	extend: {
 		fontFamily: { montserrat: ["var(--font-montserrat)", "sans-serif"], inter: ["var(--font-inter)", "sans-serif"], },
   		colors: {
-  			background: 'linear-gradient(to bottom, #121212, #1a1a1a)',
+  			background: '#121212',
   			foreground: 'hsl(var(--foreground))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',

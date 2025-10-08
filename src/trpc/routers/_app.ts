@@ -13,6 +13,7 @@ import { homeRouter } from '@/modules/home/server/procedures';
 import { explorerRouter } from '@/modules/explorer/server/procedures';
 import { xpRouter } from '@/modules/xp/server/procedures';
 import { searchRouter } from '@/modules/search/server/procedures';
+import { uploadRouter } from '@/modules/upload/server/procedures';
 // import { followsRouter } from '@/modules/follows/server/procedure';
 
 export const appRouter = createTRPCRouter({
@@ -30,6 +31,7 @@ export const appRouter = createTRPCRouter({
     explorer: explorerRouter,
     xp: xpRouter,
     search: searchRouter,
+    upload: uploadRouter,
     // userFollowers: followsRouter
     
 

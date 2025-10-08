@@ -125,13 +125,13 @@ export const videosRouter = createTRPCRouter({
                         ));
             }
 
-            if (!existingVideo.bunnyLibraryId) {
+            if (!existingVideo.id) {
                 throw new TRPCError({ code: "BAD_REQUEST" })
             }
 
 
 
-            const newThumbnailUrl = `https://image.mux.com/${existingVideo.bunnyVideoId}/thumbnail.webp`
+            const newThumbnailUrl = `https://image.mux.com/${existingVideo.id}/thumbnail.webp`
 
             const [updatedVideo] = await db
                 .update(videos)
@@ -296,24 +296,39 @@ export const videosRouter = createTRPCRouter({
         }
     }),
 
+    
+
       createAfterUpload: protectedProcedure
     .input(z.object({
-      bunnyVideoId: z.string(),            // Bunny GUID you just uploaded to
       title: z.string().min(1),
-      description: z.string().optional(),
-      categoryId: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user;
+      const {title} = input;
       const [row] = await db.insert(videos).values({
-        title: input.title,
-        description: input.description,
+        title,
         userId,
-        categoryId: input.categoryId,
-        bunnyVideoId: input.bunnyVideoId,
-        bunnyLibraryId: process.env.BUNNY_STREAM_LIBRARY_ID!,
-        bunnyStatus: "uploaded",           // webhook will flip to "ready"
       }).returning();
+      console.log(row)
       return row;
     }),
+
+    updateVideoUrl: protectedProcedure
+    .input(z.object({
+        videoId: z.string().uuid(),
+        fileUrl: z.string(),
+        thumbnailUrl: z.string(),
+    }))
+    .mutation(async ({input}) => {
+        const {videoId,fileUrl,thumbnailUrl} = input;
+        
+        await db
+        .update(videos)
+        .set({
+            playbackUrl: fileUrl,
+            thumbnailUrl
+        })
+        .where(eq(videos.id,videoId))
+
+    })
 });

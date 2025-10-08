@@ -181,11 +181,11 @@ export const VideosSectionSuspense = () => {
                   <TableCell className="py-4">
                     <div className="flex items-center">
                       <div className={`h-2 w-2 rounded-full mr-2 ${
-                        (video.bunnyStatus === "resolution_finished" || video.bunnyStatus === 'finished') ? 'bg-green-500' : 
-                        video.bunnyStatus === 'processing' ? 'bg-amber-500' : 
+                        (video.status === "completed") ? 'bg-green-500' : 
+                        video.status === 'processing' ? 'bg-amber-500' : 
                         'bg-destructive'
                       }`} />
-                      <span className="text-sm">{snakeCaseToTitle(video.bunnyStatus || "Error")}</span>
+                      <span className="text-sm">{snakeCaseToTitle(video.status || "Error")}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm py-4">

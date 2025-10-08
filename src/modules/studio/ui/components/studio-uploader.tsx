@@ -1,12 +1,12 @@
 "use client";
 
 import { LockIcon, Upload } from "lucide-react";
-import { ChangeEvent, DragEvent, useRef, useState } from "react";
+import { ChangeEvent, DragEvent,  useState } from "react";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/shadcn-io/spinner";
 
 export const StudioBunnyUploader = () => {
   const [state, setState] = useState<{ file: File | null; progress: number; uploading: boolean }>({
@@ -14,74 +14,59 @@ export const StudioBunnyUploader = () => {
   });
   const utils = trpc.useUtils();
   const router = useRouter();
+
+  let videoId: string;
+
   const createAfterUpload = trpc.videos.createAfterUpload.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+
+      videoId = data.id;
       utils.studio.getMany.invalidate({ limit: DEFAULT_LIMIT })
-      router.push(`/studio/videos/${data.id}`)
+      router.push(`/studio/videos/${videoId}`)
+
+      const fileName = (data.title).replace(/\s/g, '');
+      const encodedFileName = encodeURIComponent(fileName);
+
+      const { uploadUrl, fileUrl,thumbnailUrl } = await getPresignedUrl({
+        videoId,
+        fileName: encodedFileName,
+      });
+      updateVideoUrl.mutate({ fileUrl, videoId,thumbnailUrl })
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "video/mp4",
+        },
+        body: file,
+      });
+    
+      setState({ file, progress: 100, uploading: true });
+      toast.success(`Upload complete `);
+
     }
   });
-  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const start = async (file: File) => {
-    try {
-      setState({ file, progress: 0, uploading: true });
+  const updateVideoUrl = trpc.videos.updateVideoUrl.useMutation();
 
-      // 1) get bunny video ID (guid)
+  const { mutateAsync: getPresignedUrl } = trpc.upload.getPresignedUrl.useMutation();
 
-      const createRes = await fetch("/api/bunny/create", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: file.name }),
-      });
+  const handleUpload = async (file: File) => {
 
-      if (!createRes.ok) throw new Error(await createRes.text());
-      const { guid } = await createRes.json() as { guid: string };
+    setState({ file, progress: 0, uploading: true });
 
-      await createAfterUpload.mutateAsync({
-        bunnyVideoId: guid,
-        title: file.name,
-      });
+    createAfterUpload.mutate({ title: file.name })
 
-      toast.success("Uploaded! Processing started.");
-      // 2) Upload bytes to proxy
-      const xhr = new XMLHttpRequest();
-      xhrRef.current = xhr;
-      xhr.open("PUT", `/api/bunny/upload?videoId=${encodeURIComponent(guid)}`, true);
-      xhr.setRequestHeader("content-type", "application/octet-stream");
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.min(99, Math.round((e.loaded / e.total) * 100));
-          setState((s) => ({ ...s, progress: pct }));
-        }
-      };
-      xhr.onerror = () => {
-        setState((s) => ({ ...s, uploading: false }));
-        toast.error("Upload failed.");
-      };
-      xhr.onload = async () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setState((s) => ({ ...s, progress: 100, uploading: false }));
-
-          // use row.id to navigate or refresh list
-        } else {
-          setState((s) => ({ ...s, uploading: false }));
-          toast.error(`Upload failed (${xhr.status}).`);
-        }
-      };
-      xhr.send(file);
-    } catch (e: any) {
-      setState((s) => ({ ...s, uploading: false }));
-      toast.error(e?.message ?? "Upload failed");
-    }
+    setState({ file, progress: 50, uploading: true });
   };
 
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     console.log('pick')
-    const f = e.target.files?.[0]; if (f) void start(f);
+    const f = e.target.files?.[0]; if (f) void handleUpload(f);
   };
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const f = e.dataTransfer.files?.[0]; if (f) void start(f);
+    const f = e.dataTransfer.files?.[0]; if (f) void handleUpload(f);
   };
 
   const { file, progress } = state;
@@ -94,7 +79,7 @@ export const StudioBunnyUploader = () => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
         >
-          <div>
+          <div className="flex flex-col items-center">
             <Upload className="mx-auto h-12 w-12 text-muted-foreground" aria-hidden />
             <div className="flex text-sm leading-6 text-muted-foreground mt-2">
               <p>Drag and drop or</p>
@@ -107,12 +92,13 @@ export const StudioBunnyUploader = () => {
                   id="file-upload-03"
                   type="file"
                   className="sr-only"
-                  accept="video/*"
+                  accept="video/mp4"
                   onChange={onPick}
                 />
               </label>
               <p className="pl-1">to upload</p>
             </div>
+              <p className="text-sm pt-4 font-bold">Select a .mp4 file</p>
           </div>
         </div>
 
@@ -128,7 +114,12 @@ export const StudioBunnyUploader = () => {
               <span className="truncate">{file.name}</span>
               <span>{progress}%</span>
             </div>
-            <Progress value={progress} />
+            <div className="flex flex-col gap-2 text-center">
+
+              {progress < 100 && ( <Spinner variant="circle" />)}
+
+              <span className="text-muted-foreground text-xs">You can close this and edit the metadata while the video is processing</span>
+            </div>
           </div>
         )}
       </form>
