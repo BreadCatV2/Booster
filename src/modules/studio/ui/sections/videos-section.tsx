@@ -18,9 +18,8 @@ import Link from "next/link";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
 import {  snakeCaseToTitle } from "@/lib/utils";
 import { format } from "date-fns";
-import { Globe2Icon, LockIcon, Eye, MessageCircle, Heart, MoreHorizontal,  Calendar, Filter } from "lucide-react";
+import { Globe2Icon, LockIcon, Eye, MessageCircle,   Calendar, Filter, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
 
 export const VideosSection = () => {
   return (
@@ -104,7 +103,7 @@ export const VideosSectionSuspense = () => {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+
 
   return (
     <div>
@@ -135,8 +134,8 @@ export const VideosSectionSuspense = () => {
               </TableHead>
               <TableHead className="text-right pr-6 py-4">
                 <div className="flex items-center justify-end gap-1">
-                  <Heart size={16} />
-                  <span>Likes</span>
+                  <Star size={16} />
+                  <span>Avg.  Rating</span>
                 </div>
               </TableHead>
             </TableRow>
@@ -145,9 +144,7 @@ export const VideosSectionSuspense = () => {
             {videos.pages.flatMap((page) => page.items).map((video) => (
               <Link href={`/studio/videos/${video.id}`} key={video.id} legacyBehavior>
                 <TableRow 
-                  className={`cursor-pointer transition-all duration-200 border-t ${hoveredRow === video.id ? 'bg-muted/50' : ''}`}
-                  onMouseEnter={() => setHoveredRow(video.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
+                  className={`cursor-pointer transition-all duration-200 border-t `}
                 >
                   <TableCell className="pl-6 py-4">
                     <div className="flex items-center gap-4">
@@ -194,24 +191,20 @@ export const VideosSectionSuspense = () => {
                   <TableCell className="text-right text-sm py-4">
                     <div className="flex items-center justify-end gap-1">
                       <Eye size={14} className="text-muted-foreground" />
-                      <span>1.2K</span>
+                      <span>{video.videoViews || 0}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right text-sm py-4">
                     <div className="flex items-center justify-end gap-1">
                       <MessageCircle size={14} className="text-muted-foreground" />
-                      <span>42</span>
+                      <span>{Number(video.videoComments)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right text-sm pr-6 py-4">
                     <div className="flex items-center justify-end gap-1">
-                      <Heart size={14} className="text-muted-foreground" />
-                      <span>23.1K</span>
-                      {hoveredRow === video.id && (
-                        <button className="ml-2 p-1 rounded-md hover:bg-muted transition-colors">
-                          <MoreHorizontal size={16} />
-                        </button>
-                      )}
+                      <Star size={14} className="text-muted-foreground" />
+                      <span>{Number(video.videoRatings).toFixed(2)}</span>
+                    
                     </div>
                   </TableCell>
                 </TableRow>

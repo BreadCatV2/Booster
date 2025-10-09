@@ -77,6 +77,13 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         },
     });
 
+    const [shouldPlay, setShouldPlay] = useState(false);
+
+    useEffect(() => {
+        setShouldPlay(true);
+    }, [videoId]);
+
+
     
     // const followingList = []
 
@@ -173,7 +180,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                         thumbnailUrl={video.thumbnailUrl}
                     /> */}
                     {/* <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> */}
-                    <Player src={video.playbackUrl} autoPlay />
+                    <Player src={video.playbackUrl} autoPlay={shouldPlay} />
                 </div>
 
                 {/* Play button overlay */}

@@ -42,7 +42,7 @@ export const StudioBunnyUploader = () => {
       });
     
       setState({ file, progress: 100, uploading: true });
-      toast.success(`Upload complete `);
+      toast.success(`Uploadede to the server. Processing video `);
 
     }
   });
