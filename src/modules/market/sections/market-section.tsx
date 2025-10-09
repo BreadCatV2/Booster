@@ -120,7 +120,7 @@ export const MarketSection = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#121212] to-[#1a1a1a] text-white p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#121212] to-[#1a1a1a] text-white p-6 ml-16">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
