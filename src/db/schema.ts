@@ -86,6 +86,8 @@ export const videos = pgTable("videos", {
 
     isFeatured: boolean("is_featured").default(false),
 
+    s3Name: text("s3_name").notNull(),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
@@ -215,16 +217,16 @@ export const assets = pgTable("assets", {
     assetId: uuid("asset_id").primaryKey().defaultRandom(),
     price: integer("price").notNull().default(0),
     name: text("asset_name").notNull(),
-    category: text(),
+    category: text("category"),
     description: text("asset_description").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    iconNumber: integer().notNull().default(0),
+    iconNumber: integer("icon_number").notNull().default(0),
 })
 
 export const userAssets = pgTable("user_assets", {
-    assetId: uuid("asset_id").references(() => assets.assetId, { onDelete: "cascade", onUpdate: "cascade" }),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    assetId: uuid("asset_id").references(() => assets.assetId, { onDelete: "cascade", onUpdate: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }).notNull(),
 }, (t) => [
     primaryKey({
         name: "user_assets_pk",

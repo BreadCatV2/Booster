@@ -1,7 +1,7 @@
 "use client";
 
 import { LockIcon, Upload } from "lucide-react";
-import { ChangeEvent, DragEvent,  useState } from "react";
+import { ChangeEvent, DragEvent, useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
@@ -9,120 +9,119 @@ import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 
 export const StudioBunnyUploader = () => {
-  const [state, setState] = useState<{ file: File | null; progress: number; uploading: boolean }>({
-    file: null, progress: 0, uploading: false
-  });
-  const utils = trpc.useUtils();
-  const router = useRouter();
+    const [state, setState] = useState<{ file: File | null; progress: number; uploading: boolean }>({
+        file: null, progress: 0, uploading: false
+    });
+    const utils = trpc.useUtils();
+    const router = useRouter();
 
-  let videoId: string;
+    let videoId: string;
 
-  const createAfterUpload = trpc.videos.createAfterUpload.useMutation({
-    onSuccess: async (data) => {
+    const createAfterUpload = trpc.videos.createAfterUpload.useMutation({
+        onSuccess: async (data) => {
 
-      videoId = data.id;
-      utils.studio.getMany.invalidate({ limit: DEFAULT_LIMIT })
-      router.push(`/studio/videos/${videoId}`)
+            videoId = data.id;
+            utils.studio.getMany.invalidate({ limit: DEFAULT_LIMIT })
+            router.push(`/studio/videos/${videoId}`)
 
-      const fileName = (data.title).replace(/\s/g, '');
-      const encodedFileName = encodeURIComponent(fileName);
 
-      const { uploadUrl, fileUrl,thumbnailUrl } = await getPresignedUrl({
-        videoId,
-        fileName: encodedFileName,
-      });
-      updateVideoUrl.mutate({ fileUrl, videoId,thumbnailUrl })
+            const { uploadUrl, fileUrl, thumbnailUrl } = await getPresignedUrl({
+                videoId,
+                fileName: data.s3Name,
+            });
+            updateVideoUrl.mutate({ fileUrl, videoId, thumbnailUrl })
 
-      await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "video/mp4",
-        },
-        body: file,
-      });
-    
-      setState({ file, progress: 100, uploading: true });
-      toast.success(`Uploadede to the server. Processing video `);
+            await fetch(uploadUrl, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "video/mp4",
+                },
+                body: file,
+            });
 
-    }
-  });
 
-  const updateVideoUrl = trpc.videos.updateVideoUrl.useMutation();
+            setState({ file, progress: 100, uploading: true });
+            toast.success(`Uploadede to the server. Processing video `);
 
-  const { mutateAsync: getPresignedUrl } = trpc.upload.getPresignedUrl.useMutation();
+        }
+    });
 
-  const handleUpload = async (file: File) => {
+    const updateVideoUrl = trpc.videos.updateVideoUrl.useMutation();
 
-    setState({ file, progress: 0, uploading: true });
+    const { mutateAsync: getPresignedUrl } = trpc.upload.getPresignedUrl.useMutation();
 
-    createAfterUpload.mutate({ title: file.name })
+    const handleUpload = async (file: File) => {
 
-    setState({ file, progress: 50, uploading: true });
-  };
+        setState({ file, progress: 0, uploading: true });
 
-  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
-    console.log('pick')
-    const f = e.target.files?.[0]; if (f) void handleUpload(f);
-  };
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files?.[0]; if (f) void handleUpload(f);
-  };
+        createAfterUpload.mutate({ title: file.name })
 
-  const { file, progress } = state;
+        setState({ file, progress: 50, uploading: true });
+    };
 
-  return (
-    <div className="flex items-center justify-center p-3 w-full max-w-lg h-full z-50">
-      <form className="w-full" onSubmit={(e) => e.preventDefault()}>
-        <div
-          className="flex justify-center rounded-md border mt-2 border-dashed border-input px-6 py-12"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-        >
-          <div className="flex flex-col items-center">
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground" aria-hidden />
-            <div className="flex text-sm leading-6 text-muted-foreground mt-2">
-              <p>Drag and drop or</p>
-              <label
-                htmlFor="file-upload-03"
-                className="relative cursor-pointer rounded-sm pl-1 font-medium text-primary hover:underline hover:underline-offset-4"
-              >
-                <span>choose file</span>
-                <input
-                  id="file-upload-03"
-                  type="file"
-                  className="sr-only"
-                  accept="video/mp4"
-                  onChange={onPick}
-                />
-              </label>
-              <p className="pl-1">to upload</p>
-            </div>
-              <p className="text-sm pt-4 font-bold">Select a .mp4 file</p>
-          </div>
+    const onPick = (e: ChangeEvent<HTMLInputElement>) => {
+        console.log('pick')
+        const f = e.target.files?.[0]; if (f) void handleUpload(f);
+    };
+    const onDrop = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const f = e.dataTransfer.files?.[0]; if (f) void handleUpload(f);
+    };
+
+    const { file, progress } = state;
+
+    return (
+        <div className="flex items-center justify-center p-3 w-full max-w-lg h-full z-50">
+            <form className="w-full" onSubmit={(e) => e.preventDefault()}>
+                <div
+                    className="flex justify-center rounded-md border mt-2 border-dashed border-input px-6 py-12"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={onDrop}
+                >
+                    <div className="flex flex-col items-center">
+                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" aria-hidden />
+                        <div className="flex text-sm leading-6 text-muted-foreground mt-2">
+                            <p>Drag and drop or</p>
+                            <label
+                                htmlFor="file-upload-03"
+                                className="relative cursor-pointer rounded-sm pl-1 font-medium text-primary hover:underline hover:underline-offset-4"
+                            >
+                                <span>choose file</span>
+                                <input
+                                    id="file-upload-03"
+                                    type="file"
+                                    className="sr-only"
+                                    accept="video/mp4"
+                                    onChange={onPick}
+                                />
+                            </label>
+                            <p className="pl-1">to upload</p>
+                        </div>
+                        <p className="text-sm pt-4 font-bold">Select a .mp4 file</p>
+                    </div>
+                </div>
+
+                <p className="mt-2 text-xs leading-5 text-muted-foreground sm:flex sm:items-center sm:justify-between">
+                    <span className="flex items-center gap-2">
+                        By default, videos will be private <LockIcon className="size-4" />
+                    </span>
+                </p>
+
+                {file && (
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1">
+                            <span className="truncate">{file.name}</span>
+                            <span>{progress}%</span>
+                        </div>
+                        <div className="flex flex-col gap-2 text-center">
+
+                            {progress < 100 && (<Spinner variant="circle" />)}
+
+                            <span className="text-muted-foreground text-xs">You can close this and edit the metadata while the video is processing</span>
+                        </div>
+                    </div>
+                )}
+            </form>
         </div>
-
-        <p className="mt-2 text-xs leading-5 text-muted-foreground sm:flex sm:items-center sm:justify-between">
-          <span className="flex items-center gap-2">
-            By default, videos will be private <LockIcon className="size-4" />
-          </span>
-        </p>
-
-        {file && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="truncate">{file.name}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="flex flex-col gap-2 text-center">
-
-              {progress < 100 && ( <Spinner variant="circle" />)}
-
-              <span className="text-muted-foreground text-xs">You can close this and edit the metadata while the video is processing</span>
-            </div>
-          </div>
-        )}
-      </form>
-    </div>
-  );
+    );
 };

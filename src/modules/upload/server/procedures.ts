@@ -26,6 +26,7 @@ export const uploadRouter = createTRPCRouter({
       const userId = ctx.user.id
       const key = `videos/${videoId}_${userId}_${fileName}`; // unique key
       console.log(key);
+
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_UPLOAD_BUCKET!,
         Key: key,

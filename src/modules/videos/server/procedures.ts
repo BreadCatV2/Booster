@@ -6,6 +6,16 @@ import { eq, and, getTableColumns, sum, avg, inArray, isNotNull, sql } from "dri
 import { TRPCError } from "@trpc/server";
 import { mux } from "@/lib/mux";
 import { UTApi } from "uploadthing/server";
+import { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
+
+
+const s3 = new S3Client({
+    region: process.env.AWS_REGION!,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    },
+});
 
 export const videosRouter = createTRPCRouter({
     //.query() para queries
@@ -147,18 +157,59 @@ export const videosRouter = createTRPCRouter({
 
     ,
 
+
     remove: protectedProcedure
-        .input(z.object({ id: z.string().uuid() }))
+        .input(z.object({
+            id: z.string().uuid(),
+        }))
         .mutation(async ({ ctx, input }) => {
+
+
+
             const { id: userId } = ctx.user;
             const [removedVideo] = await db
                 .delete(videos)
                 .where(and(eq(videos.id, input.id), eq(videos.userId, userId))).returning();
+
             if (!removedVideo) {
-                throw new TRPCError({ code: "NOT_FOUND" })
+                throw new TRPCError({ code: "NOT_FOUND" });
+
             }
-            return removedVideo;
+
+            const upload_key = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}`; // unique key
+
+            console.log("upload_key", upload_key)
+
+            await s3.send(new DeleteObjectCommand({
+                Bucket: process.env.AWS_S3_UPLOAD_BUCKET!,
+                Key: upload_key,
+            }))
+
+            const prefix = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}/`;
+
+            const list = await s3.send(
+                new ListObjectsV2Command({
+                    Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
+                    Prefix: prefix,
+                })
+            );
+
+            if (list.Contents && list.Contents.length > 0) {
+                await s3.send(
+                    new DeleteObjectsCommand({
+                        Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
+                        Delete: {
+                            Objects: list.Contents.map((obj) => ({ Key: obj.Key! })),
+                        },
+                    })
+                );
+            }
+            return removedVideo
+
         }),
+
+
+
     update: protectedProcedure
         .input(videoUpdateSchema)
         .mutation(async ({ ctx, input }) => {
@@ -266,35 +317,36 @@ export const videosRouter = createTRPCRouter({
     //         return {  video:vid, assetId, playbackId };
     //     }),
 
-    create: protectedProcedure
-        .input(z.object(
-            {
-                uploadUrl: z.string().nullish(),
-                uploadId: z.string().nullish(),
-            }
-        ))
-        .mutation(async ({ ctx, input }) => {
-            // throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "-What?  - Error. This will be reported" });
-
-            try {
-
-                const { id: userId } = ctx.user;
-                const [video] = await db.insert(videos).values({
-                    userId,
-                    title: "New video title",
-                    description: "",
-                    // muxStatus: 'waiting',
-                    // muxUploadId: input.uploadId,
-                }).returning();
-                return {
-                    video: video,
-                    url: input.uploadUrl,
-                };
-            } catch (error) {
-                console.error(error);
-                throw new Error("Failed to create video");
-            }
-        }),
+    // create: protectedProcedure
+    //     .input(z.object(
+    //         {
+    //             uploadUrl: z.string().nullish(),
+    //             uploadId: z.string().nullish(),
+    //         }
+    //     ))
+    //     .mutation(async ({ ctx, input }) => {
+    //         // throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "-What?  - Error. This will be reported" });
+    //
+    //         try {
+    //
+    //             const { id: userId } = ctx.user;
+    //             const [video] = await db.insert(videos).values({
+    //                 userId,
+    //                 title: "New video title",
+    //                 description: "",
+    //                 s3Name: "",
+    //                 // muxStatus: 'waiting',
+    //                 // muxUploadId: input.uploadId,
+    //             }).returning();
+    //             return {
+    //                 video: video,
+    //                 url: input.uploadUrl,
+    //             };
+    //         } catch (error) {
+    //             console.error(error);
+    //             throw new Error("Failed to create video");
+    //         }
+    //     }),
 
 
 
@@ -305,9 +357,15 @@ export const videosRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             const { id: userId } = ctx.user;
             const { title } = input;
+
+
+            const fileName = (title).replace(/\s/g, '');
+            const encodedFileName = encodeURIComponent(fileName);
+
             const [row] = await db.insert(videos).values({
                 title,
                 userId,
+                s3Name: encodedFileName,
             }).returning();
             console.log(row)
             return row;
@@ -375,3 +433,4 @@ export const videosRouter = createTRPCRouter({
 
         })
 });
+
