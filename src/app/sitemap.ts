@@ -7,7 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: '2025-10-10',
       changeFrequency: 'yearly',
       priority: 0.5,
-      images: ['https://www.boostervideo.net/public/logo.png'],
+      images: ['https://www.boostervideo.net/logo.tmp.png'],
     },
   ]
 }
