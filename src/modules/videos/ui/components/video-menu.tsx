@@ -5,7 +5,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import {  MoreVerticalIcon, MousePointerClick, Share2,  ThumbsDown, TrashIcon } from "lucide-react";
+import { MoreVerticalIcon, MousePointerClick, Share2, ThumbsDown, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface VideoMenuProps {
@@ -21,7 +21,7 @@ export const VideoMenu = ({
 }: VideoMenuProps) => {
     const onShare = () => {
         //TODO: Change if deploying outside vercel
-        const fullUrl = `https://${process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000"}/explorer/videos/${videoId}`
+        const fullUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000"}/explorer/videos/${videoId}`
 
         navigator.clipboard.writeText(fullUrl);
         toast.success("Link Copied!")
@@ -34,12 +34,12 @@ export const VideoMenu = ({
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={onShare}>
-                <Button className="flex items-center bg-emerald-200 w-full">
+                <DropdownMenuItem onClick={onShare}>
+                    <Button className="flex items-center bg-emerald-200 w-full">
 
-                    <Share2 className="mr-2 size-4" />
-                    Share
-                </Button>
+                        <Share2 className="mr-2 size-4" />
+                        Share
+                    </Button>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                     <Button className='flex items-center justify-between bg-red-300 w-full'

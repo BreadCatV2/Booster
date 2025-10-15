@@ -8,20 +8,19 @@ import { useState } from "react"
 export const SearchInput = () => {
     // TODO: Search functionality
 
-    const [value,setValue] = useState("");
+    const [value, setValue] = useState("");
     const router = useRouter();
 
     const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        console.log("VERCEL",process.env.NEXT_PUBLIC_VERCEL_URL)
-        const url = new URL("/search",  process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000")
+        const url = new URL("/search", process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000")
         const newQuery = value.trim();
 
 
-        url.searchParams.set("query",encodeURIComponent(newQuery))
+        url.searchParams.set("query", encodeURIComponent(newQuery))
 
-        if(newQuery === ""){
+        if (newQuery === "") {
             url.searchParams.delete("query")
         }
 
@@ -49,7 +48,7 @@ export const SearchInput = () => {
                         onClick={() => setValue("")}
                         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
                     >
-                        <XIcon className="text-gray-500"/>
+                        <XIcon className="text-gray-500" />
                     </Button>
                 )}
             </div>
