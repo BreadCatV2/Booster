@@ -17,7 +17,7 @@ import { VideoMenu } from '@/modules/videos/ui/components/video-menu';
 import { VideoOwner } from '@/modules/videos/ui/components/video-owner';
 import { ErrorBoundary } from 'react-error-boundary';
 import { UserAvatar } from '@/components/user-avatar';
-import Player from '@/modules/videos/ui/sections/Player';
+import { BunnyEmbed } from '@/modules/videos/ui/sections/BunnyEmbed';
 
 
 interface Props {
@@ -111,12 +111,12 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
     const [video] = trpc.videos.getOne.useSuspenseQuery({ id: videoId })
     const [boostPoints] = trpc.xp.getBoostByVideoId.useSuspenseQuery({ videoId })
 
-    const [shouldPlay, setShouldPlay] = useState(false);
+    // const [shouldPlay, setShouldPlay] = useState(false);
 
 
-    useEffect(() => {
-        setShouldPlay(true);
-    }, [videoId]);
+    // useEffect(() => {
+    //     setShouldPlay(true);
+    // }, [videoId]);
 
     const [commentsOpen, setCommentsOpen] = useState(false);
     const { isSignedIn } = useAuth();
@@ -245,7 +245,8 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
                 >
 
 
-                    <Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />
+                    {/* <Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} /> */}
+                    <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} autoplay/> 
 
                     {/* Play button overlay */}
                     <AnimatePresence>

@@ -118,7 +118,10 @@ const ExplorerSkeleton = () => {
 };
 
 export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
-    const [selectedCategory] = useState(categoryId || "all");
+    // const [selectedCategory] = useState(categoryId || "all");
+
+    const [selectedCategory ] = useState();
+    console.log(categoryId)
 
     const [data, query] = trpc.explorer.getMany.useSuspenseInfiniteQuery(
         { limit: DEFAULT_LIMIT * 2 },
@@ -189,6 +192,8 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                     </motion.h1>
                 </div>
             </motion.div>
+
+
 
             {/* Enhanced Categories Section */}
             <motion.div

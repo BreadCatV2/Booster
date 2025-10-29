@@ -351,26 +351,49 @@ export const videosRouter = createTRPCRouter({
 
 
 
+    // createAfterUpload: protectedProcedure
+    //     .input(z.object({
+    //         title: z.string().min(1),
+    //     }))
+    //     .mutation(async ({ ctx, input }) => {
+    //         const { id: userId } = ctx.user;
+    //         const { title } = input;
+
+
+    //         const fileName = (title).replace(/\s/g, '');
+    //         const encodedFileName = encodeURIComponent(fileName);
+
+    //         const [row] = await db.insert(videos).values({
+    //             title,
+    //             userId,
+    //             s3Name: encodedFileName,
+    //         }).returning();
+    //         console.log(row)
+    //         return row;
+    //     }),
+
     createAfterUpload: protectedProcedure
-        .input(z.object({
-            title: z.string().min(1),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const { id: userId } = ctx.user;
-            const { title } = input;
-
-
-            const fileName = (title).replace(/\s/g, '');
-            const encodedFileName = encodeURIComponent(fileName);
-
-            const [row] = await db.insert(videos).values({
-                title,
-                userId,
-                s3Name: encodedFileName,
-            }).returning();
-            console.log(row)
-            return row;
-        }),
+    .input(z.object({
+      bunnyVideoId: z.string(),            // Bunny GUID you just uploaded to
+      title: z.string().min(1),
+      description: z.string().optional(),
+      categoryId: z.string().uuid().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id: userId } = ctx.user;
+      const [row] = await db.insert(videos).values({
+        title: input.title,
+        description: input.description,
+        userId,
+        categoryId: input.categoryId,
+        bunnyVideoId: input.bunnyVideoId,
+        bunnyLibraryId: process.env.BUNNY_STREAM_LIBRARY_ID!,
+        bunnyStatus: "uploaded",           // webhook will flip to "ready"
+        s3Name:"a",
+        isAi:false,
+      }).returning();
+      return row;
+    }),
 
     updateVideoUrl: protectedProcedure
         .input(z.object({

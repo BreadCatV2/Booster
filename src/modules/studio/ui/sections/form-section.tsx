@@ -45,8 +45,9 @@ import Image from "next/image";
 import { THUMBNAIL_FALLBACK } from "@/modules/videos/constants";
 import { ThumbnailUploadModal } from "../components/thumbnail-upload-modal";
 import { format } from "date-fns";
-import Player from "@/modules/videos/ui/sections/Player";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BunnyEmbed } from "@/modules/videos/ui/sections/BunnyEmbed";
+// import { VTTGenerator } from "../components/chapters";
 // import { Checkbox } from "@radix-ui/react-checkbox";
 
 interface PageProps {
@@ -456,8 +457,8 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                         playbackId={video.muxPlaybackId}
                                         thumbnailUrl={video.thumbnailUrl}
                                     /> */}
-                                    {/* <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> */}
-                                    <Player src={video.playbackUrl} thumbnailUrl={video.thumbnailUrl ?? THUMBNAIL_FALLBACK} />
+                                    <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> 
+                                    {/* <Player src={video.playbackUrl} thumbnailUrl={video.thumbnailUrl ?? THUMBNAIL_FALLBACK} /> */}
                                 </div>
 
                                 {/* Video Stats */}
@@ -580,6 +581,13 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                     )}
                                 />
                             </div>
+
+                            {/* Chapters 
+                            <div>
+                                <VTTGenerator />
+                            </div>
+                            */}
+
                         </div>
                     </div>
                 </form>

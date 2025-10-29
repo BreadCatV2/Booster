@@ -643,10 +643,16 @@ export default function Player({ src, autoPlay, thumbnailUrl, isAI }: Props) {
                         crossOrigin="anonymous"
                         autoplay={autoPlay}
                         controls={false}
-                    ></DashVideo>
+                    >
+
+
+                        <track default kind="chapters" src="https://media-chrome.mux.dev/examples/vanilla/vtt/elephantsdream/chapters.vtt" />
+
+                    </DashVideo>
 
                     <MediaLoadingIndicator noAutohide slot='centered-chrome'></MediaLoadingIndicator>
                     <MediaPreviewThumbnail mediaPreviewImage={thumbnailUrl ?? THUMBNAIL_FALLBACK} slot='slot' />
+
                 </MediaTheme>
 
                 <AnimatePresence>

@@ -51,15 +51,15 @@ export const StudioUploader = () => {
     const { mutateAsync: getPresignedUrl } = trpc.upload.getPresignedUrl.useMutation();
 
     const handleUpload = async (file: File) => {
-
-        const video = document.createElement("video");
-        video.preload= "metadata";
-        video.src = URL.createObjectURL(file);
-
         if(file.type !== "video/mp4"){
             toast.error("Please upload an mp4 file :)")
             return; 
         }
+        const video = document.createElement("video");
+        video.preload= "metadata";
+        video.src = URL.createObjectURL(file);
+
+        
 
         video.onloadedmetadata = async () => {
             URL.revokeObjectURL(video.src);
@@ -71,7 +71,10 @@ export const StudioUploader = () => {
 
             setState({ file, progress: 0, uploading: true });
 
-            createAfterUpload.mutate({ title: file.name })
+            createAfterUpload.mutate({
+                title: file.name,
+                bunnyVideoId: ""
+            })
 
             setState({ file, progress: 50, uploading: true });
         }

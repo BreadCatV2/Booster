@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Eye, Clock, Loader2 } from "lucide-react";
 import { DEFAULT_LIMIT } from "@/constants";
-import Player from "./Player";
+import { BunnyEmbed } from "./BunnyEmbed";
+// import Player from "./Player";
 
 interface VideoSectionProps {
     videoId: string;
@@ -77,11 +78,11 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         },
     });
 
-    const [shouldPlay, setShouldPlay] = useState(false);
+    // const [shouldPlay, setShouldPlay] = useState(false);
 
-    useEffect(() => {
-        setShouldPlay(true);
-    }, []);
+    // useEffect(() => {
+    //     setShouldPlay(true);
+    // }, []);
 
 
 
@@ -179,8 +180,8 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                         playbackId={video.muxPlaybackId}
                         thumbnailUrl={video.thumbnailUrl}
                     /> */}
-                    {/* <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> */}
-                    <Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />
+                     <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> 
+                    {/*<Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />*/}
                 </div>
 
                 {/* Play button overlay */}

@@ -67,10 +67,10 @@ export const videos = pgTable("videos", {
     previewUrl: text("preview_url"),
     previewKey: text("preview_key"),
 
-    // bunnyVideoId: text("bunny_video_id").unique(),        
-    // bunnyLibraryId: text("bunny_library_id"),             
-    // bunnyStatus: text("bunny_status"),                    
-    // bunnyDuration: integer("bunny_duration"),             
+    bunnyVideoId: text("bunny_video_id").unique(),        
+    bunnyLibraryId: text("bunny_library_id"),             
+    bunnyStatus: text("bunny_status"),                    
+    bunnyDuration: integer("bunny_duration"),             
 
     duration: integer("duration").default(0).notNull(),
     visibility: videoVisibility('visibility').default('private').notNull(),
