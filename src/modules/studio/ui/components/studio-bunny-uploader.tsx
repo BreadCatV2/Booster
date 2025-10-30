@@ -8,6 +8,8 @@ import { trpc } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
 import { useRouter } from "next/navigation";
 
+import * as tus from 'tus-js-client'
+
 export const StudioBunnyUploader = () => {
   const [state, setState] = useState<{ file: File | null; progress: number; uploading: boolean }>({
     file: null, progress: 0, uploading: false
@@ -21,6 +23,82 @@ export const StudioBunnyUploader = () => {
     }
   });
   const xhrRef = useRef<XMLHttpRequest | null>(null);
+
+
+  const tusUploader = async (file: File) => {
+    try {
+
+      setState({ file, progress: 0, uploading: true });
+      console.log('starting')
+      const createRes = await fetch("/api/bunny/create", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: file.name }),
+      });
+
+      if (!createRes.ok) throw new Error(await createRes.text());
+      const { guid } = await createRes.json() as { guid: string };
+
+      const signRes = await fetch("/api/bunny/sign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ videoId: guid }),
+      });
+
+      if (!signRes.ok) throw new Error(await signRes.text());
+      const { libraryId, videoId, expires, signature } = await signRes.json();
+
+
+      const upload = new tus.Upload(file, {
+        // Endpoint is the upload creation URL from your tus server
+        endpoint: 'https://video.bunnycdn.com/tusupload',
+        headers: {
+          AuthorizationSignature: signature,
+          AuthorizationExpire: expires,
+          VideoId: videoId,
+          LibraryId: libraryId,
+        },
+
+        // Retry delays will enable tus-js-client to automatically retry on errors
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        // Attach additional meta data about the file for the server
+        metadata: {
+          filename: file.name,
+          filetype: file.type,
+        },
+        // Callback for errors which cannot be fixed using retries
+        onError: (err) => {
+          setState((s) => ({ ...s, uploading: false }));
+          toast.error(`Upload failed: ${err.message}`);
+        },
+        onProgress: (bytesUploaded, bytesTotal) => {
+          const pct = Math.min(99, Math.round((bytesUploaded / bytesTotal) * 100));
+          console.log(pct)
+          setState((s) => ({ ...s, progress: pct,}));
+        },
+        onSuccess: async () => {
+          setState((s) => ({ ...s, progress: 100, uploading: false }));
+          toast.success("Uploaded! Processing started.");
+        },
+      })
+      upload.findPreviousUploads().then(async function (previousUploads) {
+        // Found previous uploads so we select the first one. 
+        if (previousUploads.length) {
+          upload.resumeFromPreviousUpload(previousUploads[0])
+        }
+
+        // Start the upload
+        upload.start()
+
+        await createAfterUpload.mutateAsync({
+          bunnyVideoId: videoId,
+          title: file.name,
+        });
+      })
+    } catch {
+      toast.error("Upload failed")
+    }
+  }
 
   const start = async (file: File) => {
     try {
@@ -77,7 +155,7 @@ export const StudioBunnyUploader = () => {
 
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     console.log('pick')
-    const f = e.target.files?.[0]; if (f) void start(f);
+    const f = e.target.files?.[0]; if (f) void tusUploader(f);
   };
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
