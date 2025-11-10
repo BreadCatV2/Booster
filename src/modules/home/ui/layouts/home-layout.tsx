@@ -16,7 +16,7 @@ export const HomeLayout = ({children}: HomeLayoutProps) => {
                 <ExplorerNavBar />
                 <div className="flex min-h-screen pt-[4rem] bg-background">
                     <ExplorerSidebar collapsible="icon" variant="inset" />
-                    <main className="flex-1 ">
+                    <main className="flex-1 pl-2">
                         {children}
                     </main>
                 </div>

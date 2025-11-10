@@ -372,7 +372,7 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
 
                 {/* COMMENTS PANEL */}
                 <motion.div
-                    className={cn(`flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#212121] backdrop-blur-md shadow-sm `, commentsOpen ? '' : 'h-full')}
+                    className={cn("flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#212121] backdrop-blur-md shadow-sm ")}
                     initial={false}
                     transition={{ duration: 0.35, ease: 'easeInOut' }}
                     onMouseEnter={() => setCommentsOpen(true)}

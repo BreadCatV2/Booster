@@ -13,6 +13,7 @@ import {
   Rocket,
   Sparkles,
   StarIcon,
+  Settings,
 } from "lucide-react";
 import { XpCard } from "@/modules/home/ui/components/xp-card";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
@@ -24,6 +25,8 @@ import { useFollow } from "@/modules/follows/hooks/follow-hook";
 import { SubButton } from "@/modules/subscriptions/ui/components/sub-button";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 import { getUserIcons } from "@/modules/market/components/assetIcons/functions/get-user-icons";
+import { useAuth } from "@clerk/nextjs";
+import { PersonalizeModal } from "../components/personalize-modal";
 
 interface Props {
   userId: string;
@@ -42,11 +45,20 @@ const diff_time = (date?: Date | string | null): number => {
 };
 
 export const UsersView = ({ userId }: Props) => {
+  const { userId: clerkUserId } = useAuth();
   const [user] = trpc.users.getByUserId.useSuspenseQuery({ userId });
   const [followers] = trpc.follows.getFollowersByUserId.useSuspenseQuery({ userId, });
   const [userVideos] = trpc.users.getVideosByUserId.useSuspenseQuery({ userId, });
   const [boostPoints] = trpc.xp.getBoostByUserId.useSuspenseQuery({ userId });
   const [creatorViews] = trpc.videoViews.getAllViewsByUserId.useSuspenseQuery({ userId, });
+
+  // Check if viewing own profile
+  const { data: currentUser } = trpc.users.getByClerkId.useQuery({
+    clerkId: clerkUserId,
+  }, {
+    enabled: !!clerkUserId,
+  });
+  const isOwnProfile = currentUser?.id === userId;
 
   const utils = trpc.useUtils();
 
@@ -59,6 +71,7 @@ export const UsersView = ({ userId }: Props) => {
   const [newLevel, setNewLevel] = useState(0);
   const previousLevelRef = useRef<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showPersonalizeModal, setShowPersonalizeModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState("videos");
 
@@ -252,27 +265,44 @@ export const UsersView = ({ userId }: Props) => {
               </div>
               <div className="flex items-center justify-between">
 
-                {isPending ? (
+                {isOwnProfile ? (
+                  // Show "Personalize Channel" button for own profile
                   <Button
-                    className="rounded-full flex justify-center text-center p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+                    onClick={() => setShowPersonalizeModal(true)}
+                    className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
                   >
-                    <Spinner variant="circle" />
+                    <Settings className="size-4 mr-2" />
+                    Personalize Channel
                   </Button>
-                ) :
-                  <SubButton
-                    onClick={onClick}
-                    disabled={isPending}
-                    isSubscribed={followers[0]?.viewerIsFollowing}
-                    className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
-                  />
-                }
-                <Button
-                  onClick={() => setShowXpPopup(true)}
-                  className="bg-gradient-to-r from-primary to-secondary text-primary-foreground font-bold py-2 px-6 rounded-full hover:opacity-90 transition-all hover:scale-105 active:scale-95"
-                >
-                  <Rocket className="size-4 mr-2" />
-                  Boost
-                </Button>
+                ) : (
+                  // Show Follow button for other users
+                  <>
+                    {isPending ? (
+                      <Button
+                        className="rounded-full flex justify-center text-center p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+                      >
+                        <Spinner variant="circle" />
+                      </Button>
+                    ) : (
+                      <SubButton
+                        onClick={onClick}
+                        disabled={isPending}
+                        isSubscribed={followers[0]?.viewerIsFollowing}
+                        className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+                      />
+                    )}
+                  </>
+                )}
+
+                {!isOwnProfile && (
+                  <Button
+                    onClick={() => setShowXpPopup(true)}
+                    className="bg-gradient-to-r from-primary to-secondary text-primary-foreground font-bold py-2 px-6 rounded-full hover:opacity-90 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <Rocket className="size-4 mr-2" />
+                    Boost
+                  </Button>
+                )}
 
               </div>
 
@@ -370,6 +400,12 @@ export const UsersView = ({ userId }: Props) => {
 
         {activeTab === "community" && <BoosterRankings userId={userId} />}
       </div>
+
+      {/* Personalize Modal */}
+      <PersonalizeModal 
+        isOpen={showPersonalizeModal} 
+        onClose={() => setShowPersonalizeModal(false)} 
+      />
     </div>
   );
 };
