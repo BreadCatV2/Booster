@@ -14,9 +14,10 @@ const nextConfig: NextConfig = {
         // …or remotePatterns (more flexible/recommended):
         remotePatterns: [
             { protocol: "https", hostname: "images.unsplash.com" },
-            // { protocol: "https", hostname: "image.mux.com" },   // Mux poster/thumbnail
-            // { protocol: "https", hostname: "assets.mux.com" },  // (optional) storyboards, etc.
-            { protocol: "https", hostname: "utfs.io" },  // (optional) storyboards, etc.
+            { protocol: "https", hostname: "img.clerk.com" },  // Clerk user profile images
+            { protocol: "https", hostname: "image.mux.com" },   // Mux poster/thumbnail
+            { protocol: "https", hostname: "assets.mux.com" },  // Mux storyboards, etc.
+            { protocol: "https", hostname: "utfs.io" },  // UploadThing
             {
               protocol: "https",
               hostname: process.env.NEXT_PUBLIC_BUNNY_PULLZONE_HOST || "vz-cd04a7d4-494.b-cdn.net",

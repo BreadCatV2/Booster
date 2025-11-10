@@ -102,7 +102,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         setIsPlaying(true)
         if (!isSignedIn) return;
         createView.mutate({ videoId })
-    }, [videoId, isSignedIn, createView]);
+    }, [videoId, isSignedIn]); // Removed createView to prevent infinite loop
 
     const handlePlayButtonClick = () => {
         videoPlayerRef.current?.play()

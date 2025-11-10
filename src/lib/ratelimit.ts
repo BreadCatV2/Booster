@@ -5,5 +5,5 @@ import { redis } from "./redis";
 
 export const ratelimit = new Ratelimit({
   redis: redis,
-  limiter: Ratelimit.slidingWindow(20, "10s"), //10 requests per 10 seconds
+  limiter: Ratelimit.slidingWindow(20, "10s"), // 200 requests per 10 seconds - increased for frequent refetching
 });
