@@ -603,7 +603,6 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                                     name={video.user?.name || "Anonymous"}
                                                     userId={video.user?.id}
                                                     badgeSize={5}
-                                                    disableLink
                                                 />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-medium text-gray-900 dark:text-white text-sm truncate">

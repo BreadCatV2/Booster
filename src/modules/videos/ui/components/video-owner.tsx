@@ -71,53 +71,51 @@ export const VideoOwner = ({ user, videoId, boostPoints }: Props) => {
 
     return (
         <div className="flex items-center gap-2">
-            <div className="flex flex-col pt-2 pr-2 pl-2  bg-gradient-to-br from-slate-50 to-gray-100 dark:from-[#333333] dark:to-[#333333] rounded-xl sm:rounded-2xl border border-gray-200 dark:border-[#404040] shadow-sm dark:shadow-none">
-                {/* Add XP Modal */}
+            <div className="flex flex-col pt-2 pr-2 pl-2 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-[#333333] dark:to-[#333333] rounded-xl sm:rounded-2xl border border-gray-200 dark:border-[#404040] shadow-sm dark:shadow-none w-[50%] max-w-full min-w-0">                {/* Add XP Modal */}
                 <AnimatePresence>
                     {showAddXpModal && (
                         <XpCard user={user} setShowAddXpModal={setShowAddXpModal} videoId={videoId} />
                     )}
                 </AnimatePresence>
                 {/* Top Section - User Info */}
-                <div className="flex flex-col sm:flex-row items-start gap-4 min-w-0">
-                    <div className="flex items-start w-full sm:w-auto">
-                        <UserAvatar
-                            size="lg"
-                            imageUrl={user.imageUrl}
-                            name={user.name}
-                            className="ring-2 ring-white dark:ring-[#333333] shadow-lg"
-                            userId={user.id}
-                            badgeSize={7}
-                        />
-
-
-                    </div>
-
-                    <div className="flex flex-col flex-grow min-w-0 w-full">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                            <div className="flex items-center gap-2">
-                                <UserInfo
-                                    size="lg"
-                                    name={user.name?.replace(/\s*null\s*$/i, "")}
-                                    className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg"
-                                    userId={user.id}
-                                />
-                                {getUserIcons(user.id, 5)}
-                            </div>
+                <div className="flex flex-col sm:flex-row items-end justify-between mb-2">
+                    <div className="flex flex-col sm:flex-row items-start gap-2 min-w-0">
+                        <div className="flex items-start w-full sm:w-auto">
+                            <UserAvatar
+                                size="lg"
+                                imageUrl={user.imageUrl}
+                                name={user.name}
+                                className="ring-2 ring-white dark:ring-[#333333] shadow-lg"
+                                userId={user.id}
+                                badgeSize={7}
+                            />
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap">
-                            <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-[#333333] dark:text-gray-300  py-1 rounded-full">
-                                <UsersIcon className="size-3 sm:size-4 text-purple-500 dark:text-purple-400" />
-                                <span className="font-medium text-xs sm:text-sm">{user.followsCount} </span>
+                        <div className="flex flex-col flex-grow min-w-0 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2">
+                                    <UserInfo
+                                        size="lg"
+                                        name={user.name?.replace(/\s*null\s*$/i, "")}
+                                        className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg"
+                                        userId={user.id}
+                                    />
+                                    {getUserIcons(user.id, 5)}
+                                </div>
                             </div>
+
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap">
+                                <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-[#333333] dark:text-gray-300  py-1 rounded-full">
+                                    <UsersIcon className="size-3 sm:size-4 text-purple-500 dark:text-purple-400" />
+                                    <span className="font-medium text-xs sm:text-sm">{user.followsCount} </span>
+                                </div>
+                            </div>
+
+
                         </div>
-
-
                     </div>
-
                     {/* Edit/Subscribe Button for desktop */}
-                    <div className="hidden sm:flex items-center">
+                    <div className="hidden lg:flex sm:flex-col">
                         {userId === user.clerkId ? (
                             <Button
                                 className="rounded-full gap-2 shadow-sm hover:shadow-md transition-all dark:bg-[#333333] dark:text-white dark:hover:bg-[#404040]"
@@ -154,7 +152,7 @@ export const VideoOwner = ({ user, videoId, boostPoints }: Props) => {
 
 
             </div>
-            <div className="bg-gradient-to-r from-amber-400/10 to-orange-500/10 dark:from-amber-400/5 dark:to-orange-500/5 rounded-2xl pt-2 pr-2 pl-2  border border-amber-200 dark:border-amber-800/50 shadow-sm hidden sm:block sm:flex-1 min-w-[300px]">
+            <div className="bg-gradient-to-r from-amber-400/10 to-orange-500/10 dark:from-amber-400/5 dark:to-orange-500/5 rounded-2xl pt-2 pr-2 pl-2  border border-amber-200 dark:border-amber-800/50 shadow-sm hidden sm:block sm:flex-1">
                 <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
                         <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-1 rounded-lg">

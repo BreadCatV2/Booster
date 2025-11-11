@@ -24,11 +24,6 @@ const items = [
         auth: true,
     },
     {
-        title: "Trending",
-        url: "/feed/trending",
-        icon: FlameIcon,
-    }, 
-    {
         title: "Market",
         url: "/market",
         icon: ShoppingCart,
