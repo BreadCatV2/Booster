@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { LogOutIcon, VideoIcon } from "lucide-react";
+import { LogOutIcon, VideoIcon, BarChart3Icon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StudioSidebarHeader } from "./studio-sidebar-header";
 
@@ -17,7 +17,7 @@ export const StudioSidebar = () => {
   const pathname = usePathname();
 
   return (
-    <Sidebar className="pt-16 z-40 " collapsible="icon">
+    <Sidebar className="pt-16 z-40 [&>div:last-child]:border-r-0" collapsible="icon">
       <SidebarContent className="bg-background">
         <SidebarGroup>
           <SidebarMenu>
@@ -35,7 +35,20 @@ export const StudioSidebar = () => {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            <Separator/>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname === "/studio/analytics"}
+                tooltip="Analytics"
+                asChild
+              >
+                <Link href="/studio/analytics">
+                  <BarChart3Icon className="size-5" />
+                  <span className="text-sm">Analytics</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <Separator />
 
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Exit studio" asChild>
