@@ -36,7 +36,7 @@ interface LevelCardProps {
         name: string;
         description: string;
         iconNumber: number;
-        requiredLevel: number;
+        requiredLevel: number | null;
     } | null;
     isUnlocked: boolean;
     isClaimed: boolean;

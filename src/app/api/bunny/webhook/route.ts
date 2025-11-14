@@ -5,7 +5,6 @@ import { db } from "@/db";
 import { videos } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-
 const statusMap = new Map<string, string>([
   ["0", "queued"],
   ["1", "processing"],
@@ -14,7 +13,6 @@ const statusMap = new Map<string, string>([
   ["4", "resolution_finished"],
   ["5", "failed"],
 ]);
-
 
 /**
  * Builds a CDN URL for a given path. We store both keys and plain URLs.
@@ -40,9 +38,9 @@ async function getBunnyVideo(libraryId: string, videoId: string) {
   return r.json() as Promise<{
     guid: string;
     title?: string;
-    length?: number;              
+    length?: number;
     status?: string;
-    thumbnailFileName?: string;   
+    thumbnailFileName?: string;
   }>;
 }
 
@@ -51,41 +49,48 @@ export async function POST(req: Request) {
   const payload = await req.json().catch(() => ({} as any));
 
   // Be defensive with field names across accounts/templates
-  const libraryId =
-    String(payload.VideoLibraryId ?? payload.LibraryId ?? process.env.BUNNY_STREAM_LIBRARY_ID ?? "");
-  const videoId =
-    String(payload.VideoGuid ?? payload.Guid ?? payload.VideoId ?? "");
-  const rawStatus = String(payload.Status ?? payload.status ?? "").toLowerCase();
+  const libraryId = String(
+    payload.VideoLibraryId ??
+      payload.LibraryId ??
+      process.env.BUNNY_STREAM_LIBRARY_ID ??
+      ""
+  );
+  const videoId = String(
+    payload.VideoGuid ?? payload.Guid ?? payload.VideoId ?? ""
+  );
+  const rawStatus = String(
+    payload.Status ?? payload.status ?? ""
+  ).toLowerCase();
 
   if (!videoId || !libraryId) {
     return new Response("Missing video/library id", { status: 400 });
   }
- 
-  // Only act when the video is processed/ready
-  
 
+  // Only act when the video is processed/ready
 
   try {
-    console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     // Ask Bunny which thumbnail file they generated
     const meta = await getBunnyVideo(libraryId, videoId); // fields documented in Get Video API
     const thumbnailFile = meta.thumbnailFileName || "thumbnail.jpg"; // fallback
     const durationSec =
-      Number.isFinite(meta.length) && (meta.length as number) > 0 ? Math.round(meta.length!) : null;
+      Number.isFinite(meta.length) && (meta.length as number) > 0
+        ? Math.round(meta.length!)
+        : null;
 
-      console.log(durationSec, meta.length)
+    console.log(durationSec, meta.length);
 
     // Build keys (stable) + plain URLs (convenience)
-    const previewKey = `/${videoId}/preview.webp`;            // always present after processing
+    const previewKey = `/${videoId}/preview.webp`; // always present after processing
     const thumbKey = `/${videoId}/${thumbnailFile}`;
 
-    console.log("THUMBNAIL URL", thumbKey)
+    console.log("THUMBNAIL URL", thumbKey);
 
     const previewUrl = cdnUrl(previewKey);
     const thumbnailUrl = cdnUrl(thumbKey);
 
     const status = statusMap.get(rawStatus);
-    console.log("THUMBNAIL URL", thumbnailUrl)
+    console.log("THUMBNAIL URL", thumbnailUrl);
     await db
       .update(videos)
       .set({
@@ -93,13 +98,30 @@ export async function POST(req: Request) {
         bunnyDuration: durationSec ?? null,
         duration: durationSec ?? undefined,
         thumbnailKey: thumbKey,
-        thumbnailUrl,               // store for convenience (unsigned)
+        thumbnailUrl, // store for convenience (unsigned)
         previewKey,
-        previewUrl,                 // store for convenience (unsigned)
+        previewUrl, // store for convenience (unsigned)
         updatedAt: new Date(),
-      status:"completed",
+        status: "completed",
       })
       .where(eq(videos.bunnyVideoId, videoId));
+
+    //MODERATION CHECK
+
+   // if you haven't already, install the SDK with "npm install sightengine --save"
+    const videoUrl = `https://vz-cd04a7d4-494.b-cdn.net/${videoId}/play_360p.mp4`
+    var sightengine = require("sightengine")(process.env.SIGHTENGINE_API_USER, process.env.SIGHTENGINE_API_SECRET);
+    sightengine
+      .check(["nudity-2.1", "violence","self-harm"])
+      .video_sync(videoUrl)
+      .then(function (result: string) {
+        // The API response (result)
+        console.log(result);
+      })
+      .catch(function (err: string) {
+        // Handle error
+        console.error(err);
+      });
 
     return new Response("ok");
   } catch (err: any) {
