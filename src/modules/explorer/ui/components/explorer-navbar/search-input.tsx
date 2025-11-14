@@ -33,7 +33,7 @@ export const SearchInput = () => {
                     onChange={(e) => setValue(e.target.value)}
                     type='text'
                     placeholder="Search"
-                    className="w-full pl-4 pr-20 py-1.5 border rounded-full focus:outline-none focus:border-blue-500"
+                    className="w-full pl-4 pr-20 py-1.5 border rounded-full focus:outline-none focus:border-gray-500"
                 />
                 {/* Clear search button */}
                 {value && (
@@ -47,15 +47,15 @@ export const SearchInput = () => {
                         <XIcon className="text-gray-500 size-4" />
                     </Button>
                 )}
+                {/* Search button */}
+                <button
+                    disabled={!value.trim()}
+                    type="submit"
+                    className="absolute right-0 top-0 bottom-0 px-4 rounded-r-full bg-gradient-to-r from-[#FFCA55] to-[#FFA100] text-black disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                    <SearchIcon className='size-6' />
+                </button>
             </div>
-            {/* Search button overlapping on the right */}
-            <button
-                disabled={!value.trim()}
-                type="submit"
-                className="absolute top-[48.5%] right-0 -translate-y-1/2 h-10 px-7 rounded-full bg-gradient-to-r from-[#FFCA55] to-[#FFA100] text-black disabled:cursor-not-allowed flex items-center justify-center "
-            >
-                <SearchIcon className='size-6' />
-            </button>
         </form>
     )
 }
