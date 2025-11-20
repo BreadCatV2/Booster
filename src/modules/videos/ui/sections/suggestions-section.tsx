@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import { THUMBNAIL_FALLBACK } from "../../constants";
 import { VideoThumbnail } from "../components/video-thumbnail";
 import { UserAvatar } from "@/components/user-avatar";
+import Link from "next/link";
 
 interface SuggestionsSectionProps {
     videoId: string;
@@ -38,7 +39,7 @@ export const SuggestionsSection = ({ videoId }: SuggestionsSectionProps) => {
                     className="relative flex items-center w-full px-4"
                 >
                     {/* Centered title */}
-                   
+
 
 
                 </motion.div>
@@ -53,63 +54,65 @@ export const SuggestionsSection = ({ videoId }: SuggestionsSectionProps) => {
                             transition={{ delay: index * 0.06 }}
                             className="group cursor-pointer"
                         >
-                            <div className="flex items-start rounded-2xl transition-all duration-300 hover:shadow-2xl overflow-hidden relative">
-                                {/* Left: fixed thumbnail */}
-                                <div className="relative w-64 h-36">
-                                    <VideoThumbnail
-                                        previewUrl={video.previewUrl ?? video.thumbnailUrl ?? THUMBNAIL_FALLBACK}
-                                        duration={video.duration}
-                                        title={video.title}
-                                    />
-                                </div>
+                            <Link href={`/videos/${video.id}`}>
+                                <div className="flex items-start rounded-2xl transition-all duration-300 hover:shadow-2xl overflow-hidden relative">
+                                    {/* Left: fixed thumbnail */}
+                                    <div className="relative w-64 h-36">
+                                        <VideoThumbnail
+                                            previewUrl={video.previewUrl ?? video.thumbnailUrl ?? THUMBNAIL_FALLBACK}
+                                            duration={video.duration}
+                                            title={video.title}
+                                        />
+                                    </div>
 
-                                {/* Right: content */}
-                                <div className="p-3 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                                            {video.title}
-                                        </h3>
+                                    {/* Right: content */}
+                                    <div className="p-3 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                {video.title}
+                                            </h3>
 
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <UserAvatar
-                                                size="sm"
-                                                imageUrl={video.user?.imageUrl || "/public-user.png"}
-                                                name={video.user?.name || "Anonymous"}
-                                                userId={video.user?.id}
-                                                badgeSize={4}
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
-                                                    {video.user?.name?.replace(/\s*null\s*$/i, "") || "Anonymous"}
-                                                </p>
-                                                <p className="text-gray-500 dark:text-gray-400 text-xs">
-                                                    {video.user?.name === "sammas24 null" ? (
-                                                        <span className="flex items-center gap-1 text-orange-500">Founder & Developer <RocketIcon className="size-3" /></span>
-                                                    ) : (
-                                                        <span className="flex items-center gap-1">Top Content Creator <Trophy className="size-3" /></span>
-                                                    )}
-                                                </p>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <UserAvatar
+                                                    size="sm"
+                                                    imageUrl={video.user?.imageUrl || "/public-user.png"}
+                                                    name={video.user?.name || "Anonymous"}
+                                                    userId={video.user?.id}
+                                                    badgeSize={4}
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                                                        {video.user?.name?.replace(/\s*null\s*$/i, "") || "Anonymous"}
+                                                    </p>
+                                                    <p className="text-gray-500 dark:text-gray-400 text-xs">
+                                                        {video.user?.name === "sammas24 null" ? (
+                                                            <span className="flex items-center gap-1 text-orange-500">Founder & Developer <RocketIcon className="size-3" /></span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1">Top Content Creator <Trophy className="size-3" /></span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                                <div className="flex items-center gap-1">
+                                                    <Eye className="w-3 h-3" />
+                                                    <span>{compactNumber(Number(video.videoViews))}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-3 h-3" />
+                                                    <span>{Number(video.averageRating).toFixed(1)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                                            <div className="flex items-center gap-1">
-                                                <Eye className="w-3 h-3" />
-                                                <span>{compactNumber(Number(video.videoViews))}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Star className="w-3 h-3" />
-                                                <span>{Number(video.averageRating).toFixed(1)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {/* Hover effect border */}
+                                    <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-amber-300 dark:group-hover:border-amber-600 transition-all duration-300 pointer-events-none" />
                                 </div>
-
-                                {/* Hover effect border */}
-                                <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-amber-300 dark:group-hover:border-amber-600 transition-all duration-300 pointer-events-none" />
-                            </div>
+                            </Link>
                         </motion.div>
                     ))}
                 </div>
