@@ -111,7 +111,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
 
 function BenefitItem({ icon, text }: { icon: React.ReactNode, text: string }) {
     return (
-        <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
+        <div className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
             <div className="text-primary">{icon}</div>
             <span className="font-medium">{text}</span>
         </div>
