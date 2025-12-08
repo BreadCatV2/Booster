@@ -401,7 +401,7 @@ export const UsersView = ({ userId }: Props) => {
             {userVideos.userVideos.map((video) => (
               <Link
                 key={video.id}
-                className="group bg-[#000000] rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer"
+                className="group bg-card border border-border rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer shadow-sm"
                 href={`/videos/${video.id}`}
               >
                 <div className="relative overflow-hidden rounded-t-2xl">
@@ -413,7 +413,7 @@ export const UsersView = ({ userId }: Props) => {
                   />
                 </div>
                 <div className="p-3">
-                  <h3 className="font-semibold line-clamp-2 mb-2">
+                  <h3 className="font-semibold line-clamp-2 mb-2 text-foreground">
                     {video.title || "Untitled Video"}
                   </h3>
                   <div className="flex justify-between text-muted-foreground text-sm">
@@ -423,7 +423,7 @@ export const UsersView = ({ userId }: Props) => {
                         {compactNumber(Number(video.videoViews) || 0)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <StarIcon className="size-4 text-yellow-300" />
+                        <StarIcon className="size-4 text-yellow-500 dark:text-yellow-300" />
                         {(Number(video.averageRating) || 0).toFixed(1)}
                       </span>
                     </div>
