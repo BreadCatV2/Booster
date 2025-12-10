@@ -8,6 +8,7 @@ export const TITLE_DEFINITIONS = [
     { name: "BornToBoost", gradient: "from-blue-400 to-purple-600" },
     { name: "President", gradient: "from-red-500 to-blue-600" },
     { name: "Founder figure", gradient: "from-emerald-400 to-cyan-500" },
+    { name: "OG", gradient: "from-indigo-500 to-pink-500" },
 ];
 
 export const getTitleGradient = (titleName: string) => {

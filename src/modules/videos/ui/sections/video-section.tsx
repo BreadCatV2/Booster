@@ -214,7 +214,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                         playbackId={video.muxPlaybackId}
                         thumbnailUrl={video.thumbnailUrl}
                     /> */}
-                     <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} onVideoEnd={handleVideoEnd} /> 
+                     <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} onVideoEnd={handleVideoEnd}/> 
                     {/*<Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />*/}
                 </div>
 

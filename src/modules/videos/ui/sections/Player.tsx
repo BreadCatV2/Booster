@@ -671,7 +671,7 @@ export default function Player({ src, autoPlay, thumbnailUrl, isAI }: Props) {
                             }}
                         >
                             <motion.div
-                                className='bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 border border-white border-opacity-20'
+                                className='bg-gradient-to-r from-primary via-primary/80 to-secondary text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 border border-white border-opacity-20'
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >

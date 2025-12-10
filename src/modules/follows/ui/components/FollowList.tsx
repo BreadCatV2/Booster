@@ -180,7 +180,7 @@ export const FollowList = () => {
                                             <motion.button
                                                 whileHover={{ scale: 1.05, y: -2 }}
                                                 whileTap={{ scale: 0.95 }}
-                                                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 py-3 rounded-xl font-semibold text-sm shadow-lg hover:shadow-[#ffca55] transition-all duration-300 flex items-center justify-center gap-2"
+                                                className="w-full bg-black text-white hover:bg-black/80 py-3 rounded-xl font-semibold text-sm shadow-lg hover:shadow-[#ffca55] transition-all duration-300 flex items-center justify-center gap-2 border border-white/20"
                                             >
                                                 <UserPlus className="h-4 w-4" />
                                                 View Profile

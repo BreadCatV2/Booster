@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Coins, ShoppingCart, Search, Filter, Crown, Palette, Sparkles, Zap, Star, Heart, Rocket, Lock, Check, Boxes, Box, Landmark, X, Video, CreditCard } from "lucide-react"
+import { Coins, ShoppingCart, Filter, Star, Lock, Check, Box, Landmark, X, Video, CreditCard, Crown } from "lucide-react"
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator"
 import { trpc } from "@/trpc/client"
 import { useAuth } from "@clerk/nextjs"
@@ -26,7 +26,6 @@ export const MarketSection = () => {
 export const MarketSectionSuspense = () => {
   const [activeAssets] = trpc.assets.getMany.useSuspenseQuery();
   const [selectedCategory, setSelectedCategory] = useState("icons")
-  const [searchQuery, setSearchQuery] = useState("")
   const [showXpPopup, setShowXpPopup] = useState(false)
   const [rewardedAdsEnabled, setRewardedAdsEnabled] = useState(false)
 
@@ -51,6 +50,7 @@ export const MarketSectionSuspense = () => {
     { name: "BornToBoost", gradient: "from-blue-400 to-purple-600" },
     { name: "President", gradient: "from-red-500 to-blue-600" },
     { name: "Founder figure", gradient: "from-emerald-400 to-cyan-500" },
+    { name: "OG", gradient: "from-indigo-500 to-pink-500" },
   ];
 
   const getTitleGradient = (titleName: string) => {
@@ -64,26 +64,17 @@ export const MarketSectionSuspense = () => {
 
   const filteredItems = activeAssets.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+    return matchesCategory
   })
 
   // Add dummy items for display purposes (3 rows = 12 items on 4-column grid)
   const dummyItems = [
     { assetId: "dummy-1", name: "Golden Crown", price: 850, category: "icons", iconNumber: 0, emoji: "👑" },
-    { assetId: "dummy-2", name: "Fire Effect", price: 1200, category: "effects", iconNumber: 0, emoji: "🔥" },
-    { assetId: "dummy-4", name: "Neon Glow", price: 950, category: "effects", iconNumber: 0, emoji: "✨" },
-    { assetId: "dummy-5", name: "Diamond Frame", price: 1500, category: "frames", iconNumber: 0, emoji: "💎" },
-    { assetId: "dummy-6", name: "Purple Theme", price: 2000, category: "themes", iconNumber: 0, emoji: "💜" },
     { assetId: "dummy-7", name: "Lightning Bolt", price: 750, category: "icons", iconNumber: 0, emoji: "⚡" },
-    { assetId: "dummy-8", name: "Sunset Background", price: 1800, category: "backgrounds", iconNumber: 0, emoji: "🌅" },
-    { assetId: "dummy-10", name: "Pink Color", price: 500, category: "colors", iconNumber: 0, emoji: "🩷" },
     { assetId: "dummy-11", name: "Rocket Icon", price: 900, category: "icons", iconNumber: 0, emoji: "🚀" },
-    { assetId: "dummy-12", name: "Galaxy Theme", price: 2500, category: "themes", iconNumber: 0, emoji: "🌌" },
   ].filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+    return matchesCategory
   })
 
   const allItems = [...filteredItems, ...dummyItems]
@@ -127,11 +118,6 @@ export const MarketSectionSuspense = () => {
   const categories = [
     { id: "icons", name: "Icons", icon: <Star className="h-4 w-4" /> },
     { id: "titles", name: "Titles", icon: <Crown className="h-4 w-4" /> },
-    { id: "backgrounds", name: "Backgrounds", icon: <Palette className="h-4 w-4" /> },
-    { id: "effects", name: "Effects", icon: <Zap className="h-4 w-4" /> },
-    { id: "colors", name: "Colors", icon: <Palette className="h-4 w-4" /> },
-    { id: "frames", name: "Frames", icon: <Heart className="h-4 w-4" /> },
-    { id: "themes", name: "Themes", icon: <Sparkles className="h-4 w-4" /> },
   ]
 
   // Add CSS animations to your global CSS or CSS-in-JS
@@ -227,8 +213,8 @@ export const MarketSectionSuspense = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Current Balance:</span>
                   <div className="flex items-center gap-2">
-                    <Boxes className="h-5 w-5 text-purple-500" />
-                    <span className="text-xl font-bold">{Intl.NumberFormat("en").format(userCoins)} XP</span>
+                    <span className="text-sm font-bold text-purple-500">XP</span>
+                    <span className="text-xl font-bold">{Intl.NumberFormat("en").format(userCoins)}</span>
                   </div>
                 </div>
               </div>
@@ -292,9 +278,9 @@ export const MarketSectionSuspense = () => {
 
                       <div className="flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-3">
-                          <Boxes className="h-6 w-6 text-purple-500" />
+                          <span className="text-lg font-bold text-purple-500">XP</span>
                           <div>
-                            <div className="font-semibold text-lg">{pkg.amount.toLocaleString()} XP</div>
+                            <div className="font-semibold text-lg">{pkg.amount.toLocaleString()}</div>
                             <div className="text-muted-foreground text-sm">Instant delivery</div>
                           </div>
                         </div>
@@ -322,44 +308,16 @@ export const MarketSectionSuspense = () => {
         )}
 
         {/* Rest of your existing JSX remains the same, just add animation classes */}
-        {/* Search and Filter Section */}
-        <div className="bg-card rounded-xl border border-border p-4 mb-8 relative overflow-hidden">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-full bg-muted/50 border border-border focus:border-primary focus:outline-none transition-all duration-300"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Filter:</span>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="rounded-full bg-muted/50 border border-border text-foreground px-3 py-2 text-sm focus:border-primary focus:outline-none transition-all duration-300"
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Category Chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
+        {/* Category Selection */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-muted/30 p-1.5 rounded-full inline-flex items-center border border-border/50">
             {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm ${selectedCategory === category.id
-                  ? "bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${selectedCategory === category.id
+                  ? "bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 shadow-md scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
               >
                 {category.icon}
@@ -404,11 +362,7 @@ export const MarketSectionSuspense = () => {
                     </h3>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        {item.price < 500 ? (
-                          <Box className="h-4 w-4 text-purple-400 mr-1" />
-                        ) : (
-                          <Boxes className="h-5 w-5 text-purple-600 mr-1" />
-                        )}
+                        <span className="text-xs font-bold text-purple-500 mr-1">XP</span>
                         <span className="font-semibold">{item.price}</span>
                       </div>
 
@@ -428,7 +382,7 @@ export const MarketSectionSuspense = () => {
                             </Button>
                           ) : (
                             <Button
-                              className="rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-semibold shadow-lg hover:shadow-[#ffca55] transition-all duration-300 hover:scale-105 hover:-translate-y-0.5"
+                              className="rounded-xl bg-black text-white hover:bg-black/80 text-sm font-semibold shadow-lg hover:shadow-[#ffca55] transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 border border-white/20"
                               onClick={() => handlePurchase(item.assetId, item.price)}
                             >
                               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -449,55 +403,12 @@ export const MarketSectionSuspense = () => {
         {
           allItems.length === 0 && (
             <div className="text-center py-16">
-              <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <Box className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-semibold text-foreground">No items found</h3>
-              <p className="text-muted-foreground mt-2">Try adjusting your search or filter criteria</p>
+              <p className="text-muted-foreground mt-2">Try adjusting your filter criteria</p>
             </div>
           )
         }
-
-        {/* Featured Section */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Crown className="h-6 w-6 text-[#ffca55]" />
-            Featured Items
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl border border-purple-800 p-6 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
-              <div className="text-6xl">🌟</div>
-              <div>
-                <h3 className="text-xl font-bold">Premium Creator Pack</h3>
-                <p className="text-muted-foreground mt-2">Get access to exclusive items and special features</p>
-                <div className="flex items-center mt-4">
-                  <Coins className="h-5 w-5 text-[#ffca55] mr-2" />
-                  <span className="font-semibold">2,500</span>
-                  <Button className="ml-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90">
-                    <Rocket className="h-4 w-4 mr-2" />
-                    Unlock Now
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl border border-blue-800 p-6 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
-              <div className="text-6xl">⚡</div>
-              <div>
-                <h3 className="text-xl font-bold">Weekly Special Offer</h3>
-                <p className="text-muted-foreground mt-2">Limited time offer - 50% off on all effects</p>
-                <div className="flex items-center mt-4">
-                  <Boxes className="h-5 w-5 text-[#ffca55] mr-2" />
-                  <span className="font-semibold line-through text-muted-foreground">1,500</span>
-                  <span className="font-semibold ml-2">750</span>
-                  <Button className="ml-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Claim Offer
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div >
     </div >
   )

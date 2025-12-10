@@ -8,6 +8,7 @@ const TITLES_TO_SEED = [
     { name: "BornToBoost", price: 3000, category: "titles", description: "Born to Boost title", iconNumber: 0 },
     { name: "President", price: 10000, category: "titles", description: "President title", iconNumber: 0 },
     { name: "Founder figure", price: 8000, category: "titles", description: "Founder figure title", iconNumber: 0 },
+    { name: "OG", price: 50, category: "titles", description: "Original Gangster User title", iconNumber: 0 },
 ];
 
 async function main() {

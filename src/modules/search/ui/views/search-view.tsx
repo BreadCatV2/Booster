@@ -127,7 +127,7 @@ const ChannelCard = ({ channel }: ChannelCardProps) => {
     })
 
     return (
-        <div className="bg-[#333333] rounded-xl p-6 border border-gray-700 hover:border-yellow-400/30 transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-[#333333] rounded-xl p-6 border border-gray-700 hover:border-primary/30 transition-all duration-300 hover:shadow-2xl">
             <div className="flex items-start gap-4 mb-4">
                 <Link href={`/users/${channel.id}`}>
                     <UserAvatar
@@ -140,7 +140,7 @@ const ChannelCard = ({ channel }: ChannelCardProps) => {
                 </Link>
                 <div className="flex-1 min-w-0">
                     <Link href={`/users/${channel.id}`}>
-                        <h3 className="text-lg font-semibold truncate hover:text-yellow-400 transition-colors">
+                        <h3 className="text-lg font-semibold truncate hover:text-primary transition-colors">
                             {channel.name}
                         </h3>
                     </Link>
@@ -222,7 +222,7 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-gray-300">Sort by:</span>
-                        <select className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent">
+                        <select className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option>Relevance</option>
                             <option>Upload date</option>
                             <option>View count</option>
@@ -235,21 +235,21 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                 {channelsQuery.isLoading ? (
                     <div className="mb-12">
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <span className="text-yellow-400">Channels</span>
+                            <span className="text-primary">Channels</span>
                         </h2>
                         <div className="text-gray-400">Loading channels...</div>
                     </div>
                 ) : channelsQuery.error ? (
                     <div className="mb-12">
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <span className="text-yellow-400">Channels</span>
+                            <span className="text-primary">Channels</span>
                         </h2>
                         <div className="text-red-500">Error loading channels: {channelsQuery.error.message}</div>
                     </div>
                 ) : channels.length > 0 ? (
                     <div className="mb-12">
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <span className="text-yellow-400">Channels</span>
+                            <span className="text-primary">Channels</span>
                         </h2>
                         <div className="space-y-6">
                             {channels.map((channel) => (
@@ -263,7 +263,7 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                 {videos.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <span className="text-[#ffca55]">Videos</span>
+                            <span className="text-primary">Videos</span>
                         </h2>
                         {/* Video List */}
                         <div className="space-y-6">
@@ -271,7 +271,7 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                         <Link
                             key={video.id}
                             href={`/videos/${video.id}`}
-                            className="flex flex-col lg:flex-row bg-[#333333] rounded-xl overflow-hidden border border-gray-700 hover:border-yellow-400/30 transition-all duration-300 hover:shadow-2xl"
+                            className="flex flex-col lg:flex-row bg-[#333333] rounded-xl overflow-hidden border border-gray-700 hover:border-primary/30 transition-all duration-300 hover:shadow-2xl"
                         >
                             {/* Thumbnail */}
                             <div className="relative lg:w-96 xl:w-[400px] h-48 lg:h-56 flex-shrink-0">
@@ -300,7 +300,7 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                                         <span className="font-medium">{video.user.name}</span>
                                         {/* TODO: verified */}
                                         {/* {video.channel.verified && (
-                                            <i className="fas fa-check-circle text-yellow-400 text-sm" />
+                                            <i className="fas fa-check-circle text-primary text-sm" />
                                         )} */}
                                     </div>
                                     <p className="text-gray-400 text-sm line-clamp-3 mb-4">
@@ -312,7 +312,7 @@ export const SearchViewSuspense = ({ query }: SearchViewProps) => {
                                 <div className="flex items-center gap-3">
                                     <Rating value={Math.floor(Number(video.averageRating))} readOnly>
                                         {Array.from({ length: 5 }).map((_, index) => (
-                                            <RatingButton className="text-amber-500" key={index} />
+                                            <RatingButton className="text-primary" key={index} />
                                         ))}
                                     </Rating>
                                     <div className="text-center">

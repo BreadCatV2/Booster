@@ -38,6 +38,7 @@ const TITLE_DEFINITIONS = [
     { name: "BornToBoost", gradient: "from-blue-400 to-purple-600" },
     { name: "President", gradient: "from-red-500 to-blue-600" },
     { name: "Founder figure", gradient: "from-emerald-400 to-cyan-500" },
+    { name: "OG", gradient: "from-indigo-500 to-pink-500" },
 ];
 
 const getTitleGradient = (titleName: string) => {
@@ -673,34 +674,6 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                                                         </div>
                                                     </button>
                                                 </div>
-                                            </div>
-
-                                            <div>
-                                                <h3 className="text-lg font-bold mb-3">Accent Color</h3>
-                                                <div className="flex space-x-3">
-                                                    {ACCENT_COLORS.map((accent, idx) => (
-                                                        <button 
-                                                            key={idx} 
-                                                            onClick={() => setSelectedAccent(idx)} 
-                                                            className={cn(
-                                                                "w-12 h-12 rounded-lg transition-all border-4", 
-                                                                `bg-gradient-to-br ${accent.gradient}`,
-                                                                selectedAccent === idx ? "scale-110 shadow-lg" : "border-transparent"
-                                                            )}
-                                                            style={selectedAccent === idx ? { borderColor: accent.bgSolid } : {}}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-end space-x-3 pt-4">
-                                                <Button variant="outline">Reset</Button>
-                                                <Button 
-                                                    className="text-white"
-                                                    style={{ background: currentAccent.bgSolid }}
-                                                >
-                                                    Apply
-                                                </Button>
                                             </div>
                                         </div>
                                     )}

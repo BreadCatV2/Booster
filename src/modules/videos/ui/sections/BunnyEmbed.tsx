@@ -1,4 +1,3 @@
-// components/BunnyEmbed.tsx
 'use client'
 import { useEffect, useRef, } from 'react';
 
@@ -11,7 +10,7 @@ declare global {
 export function BunnyEmbed({
   libraryId,
   videoId,
-  autoplay = false,
+  autoplay = true,
   muted = false,
   token,
   expires,
