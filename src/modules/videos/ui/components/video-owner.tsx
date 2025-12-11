@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils";
 import { XpCard } from "@/modules/home/ui/components/xp-card";
 import { AnimatePresence } from "framer-motion";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
-import { getUserIcons } from "@/modules/market/components/assetIcons/functions/get-user-icons";
 import { useRouter } from "next/navigation";
+import { trpc } from "@/trpc/client";
+import { getTitleGradient } from "@/constants";
 
 type User = {
     followsCount: number;
@@ -48,6 +49,7 @@ export const VideoOwner = ({ user, videoId, boostPoints, className }: Props) => 
     const { userId } = useAuth();
     const router = useRouter();
     const [showAddXpModal, setShowAddXpModal] = useState(false);
+    const { data: equippedTitle } = trpc.users.getEquippedTitle.useQuery({ userId: user.id });
 
     //WHERE IS THE PREFETCH? -- TODO: getBoostByVideoId -> userId -> boost points
     // const [boostPoints] = trpc.xp.getBoostByUserId.useSuspenseQuery({userId:user.id})
@@ -113,9 +115,14 @@ export const VideoOwner = ({ user, videoId, boostPoints, className }: Props) => 
                                         className="font-semibold text-foreground text-base sm:text-lg"
                                         userId={user.id}
                                     />
-                                    {getUserIcons(user.id, 5)}
                                 </div>
                             </div>
+
+                            {equippedTitle && (
+                                <p className={cn("flex items-center gap-2 font-bold bg-clip-text text-transparent bg-gradient-to-r text-xs mb-1", getTitleGradient(equippedTitle.name))}>
+                                    {equippedTitle.name}
+                                </p>
+                            )}
 
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap">
                                 <div className="flex items-center gap-1.5 bg-muted text-muted-foreground py-1 rounded-full">

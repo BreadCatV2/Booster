@@ -4,12 +4,13 @@ import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Coins, ShoppingCart, Filter, Star, Lock, Check, Box, Landmark, X, Video, CreditCard, Crown } from "lucide-react"
+import { Coins, ShoppingCart, Filter, Star, Lock, Check, Box, Landmark, X, Video, CreditCard, Crown, Users, Zap } from "lucide-react"
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator"
 import { trpc } from "@/trpc/client"
 import { useAuth } from "@clerk/nextjs"
 import { ErrorBoundary } from "react-error-boundary"
 import { Spinner } from "@/components/ui/shadcn-io/spinner"
+import { useSearchParams } from "next/navigation"
 
 
 
@@ -26,12 +27,20 @@ export const MarketSection = () => {
 export const MarketSectionSuspense = () => {
   const [activeAssets] = trpc.assets.getMany.useSuspenseQuery();
   const [selectedCategory, setSelectedCategory] = useState("icons")
-  const [showXpPopup, setShowXpPopup] = useState(false)
-  const [rewardedAdsEnabled, setRewardedAdsEnabled] = useState(false)
+  const searchParams = useSearchParams();
+  const [showXpPopup, setShowXpPopup] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "get-xp") {
+      setShowXpPopup(true);
+    }
+  }, [searchParams]);
 
   const { userId: clerkUserId } = useAuth();
   const { data: user } = trpc.users.getByClerkId.useQuery({
     clerkId: clerkUserId,
+  }, {
+    enabled: !!clerkUserId,
   });
   const userId = user?.id;
   const { data: myXp } = trpc.xp.getXpByUserId.useQuery(
@@ -42,6 +51,12 @@ export const MarketSectionSuspense = () => {
   const [ownedItems] = trpc.assets.getAssetsByUser.useSuspenseQuery();
 
   const utils = trpc.useUtils();
+  const toggleAds = trpc.users.toggleRewardedAds.useMutation({
+    onSuccess: (data) => {
+      utils.users.getByClerkId.setData({ clerkId: clerkUserId }, data);
+      utils.users.getByClerkId.invalidate({ clerkId: clerkUserId });
+    }
+  });
 
   const userCoins = myXp?.xp || 0;
 
@@ -59,7 +74,9 @@ export const MarketSectionSuspense = () => {
   };
 
   const assetIcon = new Map<number, JSX.Element>([
-    // [0, <AnimatedPlanetIcon size={24} key={0} />],
+    [1, <Zap className="w-12 h-12 text-yellow-400" key={1} />],
+    [2, <Users className="w-12 h-12 text-blue-400" key={2} />],
+    [3, <Star className="w-12 h-12 text-purple-400" key={3} />],
   ])
 
   const filteredItems = activeAssets.filter(item => {
@@ -67,17 +84,7 @@ export const MarketSectionSuspense = () => {
     return matchesCategory
   })
 
-  // Add dummy items for display purposes (3 rows = 12 items on 4-column grid)
-  const dummyItems = [
-    { assetId: "dummy-1", name: "Golden Crown", price: 850, category: "icons", iconNumber: 0, emoji: "👑" },
-    { assetId: "dummy-7", name: "Lightning Bolt", price: 750, category: "icons", iconNumber: 0, emoji: "⚡" },
-    { assetId: "dummy-11", name: "Rocket Icon", price: 900, category: "icons", iconNumber: 0, emoji: "🚀" },
-  ].filter(item => {
-    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
-    return matchesCategory
-  })
-
-  const allItems = [...filteredItems, ...dummyItems]
+  const allItems = filteredItems
 
 
   // handle
@@ -107,8 +114,8 @@ export const MarketSectionSuspense = () => {
   };
 
   const xpPackages: { amount: number; price: number; popular: boolean; lookup: "xp_500" | "xp_1200" | "xp_2500" | "xp_5500" | "xp_10000" | "xp_50000" }[] = [
-    { amount: 500, price: 1.99, popular: false, lookup: "xp_500" },
-    { amount: 1200, price: 3.99, popular: false, lookup: "xp_1200" },
+    { amount: 200, price: 0.99, popular: false, lookup: "xp_500" },
+    { amount: 500, price: 1.99, popular: false, lookup: "xp_1200" },
     { amount: 2500, price: 7.99, popular: true, lookup: "xp_2500" },
     { amount: 5500, price: 15.99, popular: false, lookup: "xp_5500" },
     { amount: 10000, price: 25.99, popular: false, lookup: "xp_10000" },
@@ -192,7 +199,7 @@ export const MarketSectionSuspense = () => {
         {/* XP Popup Modal */}
         {showXpPopup && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-card rounded-2xl border border-border max-w-md w-full max-h-[90vh] overflow-y-auto relative overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border max-w-md w-full max-h-[70vh] overflow-y-auto relative overflow-hidden scrollbar-hide">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border relative">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-[#ffca55] to-[#FFA100] bg-clip-text text-transparent">
@@ -223,10 +230,10 @@ export const MarketSectionSuspense = () => {
               <div className="p-6 border-b border-border">
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                   <Video className="h-5 w-5 text-blue-400" />
-                  Free XP - Watch Ads
+                  Free XP - Featured Videos
                 </h3>
                 <p className="text-muted-foreground text-sm mb-4">
-                  Watch an ad to earn XP for free!
+                  Watch featured videos to earn XP for free!
                 </p>
                 <div className="flex items-center justify-between p-5 bg-muted/50 rounded-xl border-2 border-border hover:border-blue-500 transition-colors">
                   <div className="flex items-center gap-3">
@@ -234,15 +241,16 @@ export const MarketSectionSuspense = () => {
                       <Video className="h-6 w-6 text-blue-400" />
                     </div>
                     <div>
-                      <div className="font-semibold text-foreground text-base">Rewarded Ads</div>
+                      <div className="font-semibold text-foreground text-base">Featured Videos</div>
                       <div className="text-sm text-muted-foreground">
-                        {rewardedAdsEnabled ? "✓ Ads are active" : "Enable to watch ads"}
+                        {user?.rewardedAdsEnabled ? "✓ Ads are active" : "Enable to watch ads"}
                       </div>
                     </div>
                   </div>
                   <Switch
-                    checked={rewardedAdsEnabled}
-                    onCheckedChange={setRewardedAdsEnabled}
+                    checked={user?.rewardedAdsEnabled ?? false}
+                    onCheckedChange={(checked) => toggleAds.mutate({ enabled: checked })}
+                    disabled={toggleAds.isPending}
                     className="data-[state=checked]:bg-blue-600 scale-125"
                   />
                 </div>
@@ -324,6 +332,9 @@ export const MarketSectionSuspense = () => {
                 {category.name}
               </button>
             ))}
+            <div className="px-4 py-2 text-sm font-medium text-red-400 italic border-l border-border/50 ml-2 select-none">
+              More coming soon...
+            </div>
           </div>
         </div>
 

@@ -211,6 +211,21 @@ export const usersRouter = createTRPCRouter({
       return asset || null;
     }),
 
+  toggleRewardedAds: protectedProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { enabled } = input;
+      const userId = ctx.user.id;
+
+      const [updatedUser] = await db
+        .update(users)
+        .set({ rewardedAdsEnabled: enabled })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    }),
+
   // getAssetsByUser
 
 })

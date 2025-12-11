@@ -20,7 +20,9 @@ import {
     Upload,
     Search,
     ShoppingBag,
-    type LucideIcon
+    type LucideIcon,
+    Users,
+    Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -199,6 +201,9 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
     // Map iconNumber to component (extensible for future icons)
     const getIconComponent = (iconNumber: number) => {
         const iconMap = new Map<number, React.ComponentType<any>>([
+            [1, Zap],
+            [2, Users],
+            [3, Star],
             // [0, AnimatedPlanetIcon], // Founder Member Icon - Removed
             // Add more icons here as marketplace grows
         ]);
@@ -554,7 +559,7 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                                                                     if (isPurchased && iconData.icon) {
                                                                         // Handle custom purchased icons
                                                                         const CustomIcon = iconData.icon;
-                                                                        return <CustomIcon size={4} />;
+                                                                        return <CustomIcon className="w-4 h-4" />;
                                                                     }
                                                                     if (isLucideIcon && iconData.icon) {
                                                                         const IconComponent = iconData.icon as LucideIcon;

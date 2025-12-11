@@ -20,6 +20,7 @@ export const users = pgTable("users", {
     newLevelUpgrade: timestamp("new_level_at"),
     equippedAssetId: uuid("equipped_asset_id").references((): AnyPgColumn => assets.assetId), // The currently equipped/displayed asset icon
     equippedTitleId: uuid("equipped_title_id").references((): AnyPgColumn => assets.assetId), // The currently equipped title
+    rewardedAdsEnabled: boolean("rewarded_ads_enabled").default(false),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
 
 //create index on clerk_id to query faster. --> speed up WHERE, JOIN, ORDER BY clauses. B-Tree sorted by the column I index

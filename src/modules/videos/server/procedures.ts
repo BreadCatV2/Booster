@@ -180,6 +180,7 @@ export const videosRouter = createTRPCRouter({
       if (user) {
         userId = user.id;
       }
+
       const viewerFollow = db.$with("viewer_follow").as(
         db
           .select()

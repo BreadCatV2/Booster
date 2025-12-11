@@ -35,7 +35,7 @@ export const XpIndicator = ({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Your total experience in the platform</p>
+          <p>Your XP</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -11,7 +11,11 @@ import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
 import { UserAvatar } from "@/components/user-avatar";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import Link from "next/link";
+import Image from "next/image";
 import { ErrorBoundary } from "react-error-boundary";
+import { useAuth } from "@clerk/nextjs";
+
+import { UserIcon } from "@/modules/market/components/assetIcons/functions/get-user-icons";
 
 interface HomeViewProps {
     categoryId?: string;
@@ -122,6 +126,11 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
     // const [selectedCategory] = useState(categoryId || "all");
 
     const [selectedCategory, setSelectedCategory] = useState(categoryId);
+    const { userId: clerkUserId } = useAuth();
+    const { data: user } = trpc.users.getByClerkId.useQuery({
+        clerkId: clerkUserId,
+    });
+    const rewardedAdsEnabled = user?.rewardedAdsEnabled ?? false;
 
         const searchParams = useSearchParams();
         const aiQuery = searchParams?.get("q") ?? undefined;
@@ -211,26 +220,62 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                 </div>
             </motion.div>
 
+            {/* Placeholder for Featured Video when ads are disabled */}
+            {featuredVideo && !rewardedAdsEnabled && (
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative w-full mb-4"
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <motion.div
+                                    className="w-2 h-6 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full"
+                                />
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Earn Free XP</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-black border border-gray-200 dark:border-gray-800 p-3 md:p-4">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5" />
+                        <div className="relative z-10 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                    <Image src="/xpicon.png" alt="XP" width={30} height={30} className="w-6 h-6" />
+                                <div>
+                                    <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                                        Activate Featured Videos and Earn XP
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm hidden sm:block mt-0.5">
+                                    </p>
+                                </div>
+                            </div>
+                            <Link href="/market?action=get-xp" className="flex-shrink-0 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full font-bold hover:scale-105 transition-transform shadow-lg text-xs whitespace-nowrap flex items-center justify-center">
+                                Enable Featured
+                            </Link>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
             {/* Enhanced Featured Video Section */}
-            {featuredVideo && (
+            {featuredVideo && rewardedAdsEnabled && (
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{  duration: 0.2 }}
-                    className="relative w-full group"
-                >
-                    {/* Animated Background Glow - Outside container */}
-                    <div className="absolute inset-0 rounded-3xl blur-lg opacity-0  bg-secondary transition-opacity duration-500 pointer-events-none -z-10" />
-
-                    <div className="relative shadow-2xl overflow-hidden">
+                    className="relative w-full group">
+                    
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-3">
                                     <motion.div
-                                        className="w-3 h-10 bg-gradient-to-b from-primary to-secondary rounded-full shadow-lg"
+                                        className="w-3 h-10 bg-gradient-to-b from-primary to-secondary rounded-full "
                                     />
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Earn XP with Advertisement</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Earn free XP</h2>
                                 </div>
                             </div>
                         </div>
@@ -288,7 +333,10 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                                         disableLink
                                                     />
                                                     <div>
-                                                        <p className="text-white font-medium text-sm">{featuredVideo.user?.name}</p>
+                                                        <div className="flex items-center gap-1">
+                                                            <p className="text-white font-medium text-sm">{featuredVideo.user?.name}</p>
+                                                            <UserIcon userId={featuredVideo.user?.id} size={4} />
+                                                        </div>
                                                         <div className="flex items-center gap-2 text-white/80 text-xs mt-0.5">
                                                             <div className="flex items-center gap-1">
                                                                 <Eye className="w-3 h-3" />
@@ -320,7 +368,6 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
 
                             
                         </div>
-                    </div>
                 </motion.div>
             )}
 
@@ -451,9 +498,12 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                                     badgeSize={5}
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 break-all">
-                                                        {video.user?.name?.replace(/\s*null\s*$/i, "") || "Anonymous"}
-                                                    </p>
+                                                    <div className="flex items-center gap-1">
+                                                        <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 break-all">
+                                                            {video.user?.name?.replace(/\s*null\s*$/i, "") || "Anonymous"}
+                                                        </p>
+                                                        <UserIcon userId={video.user?.id} size={4} />
+                                                    </div>
                                                     {video.user?.name === "sammas24 null" ? (
                                                         <p className="flex items-center gap-2 text-orange-500 text-xs">
                                                             Founder & Developer <RocketIcon className="size-3" />

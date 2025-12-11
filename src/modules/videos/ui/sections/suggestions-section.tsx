@@ -16,13 +16,15 @@ interface SuggestionsSectionProps {
 }
 
 export const SuggestionsSection = ({ videoId }: SuggestionsSectionProps) => {
-
     const [data, query] = trpc.videos.getMore.useSuspenseInfiniteQuery(
         { videoId, limit: DEFAULT_LIMIT },
         { getNextPageParam: (lastPage) => lastPage.nextCursor },
     );
 
-    const watchNext = useMemo(() => data ? data.pages.flatMap(p => p.items) : [], [data]);
+    const watchNext = useMemo(() => {
+        if (!data) return [];
+        return data.pages.flatMap(p => p.items);
+    }, [data]);
 
     return (
         <div className="relative w-full">
