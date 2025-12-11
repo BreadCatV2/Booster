@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { videoRatings } from "@/db/schema";
+import { videoRatings, videos } from "@/db/schema";
 import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import z from "zod";
+import { updateVideoScore } from "@/modules/videos/server/utils";
 
 export const videoRatingsRouter = createTRPCRouter({
     create: protectedProcedure
@@ -48,6 +49,17 @@ export const videoRatingsRouter = createTRPCRouter({
                     eq(videoRatings.userId,existingRating.userId)
                     ))
                     .returning()
+
+                // Update video rating stats and score
+                await db.execute(sql`
+                    UPDATE videos v
+                    SET 
+                        rating_count = (SELECT COUNT(*) FROM video_ratings WHERE video_id = ${videoId}),
+                        average_rating = (SELECT COALESCE(AVG(rating), 0) FROM video_ratings WHERE video_id = ${videoId})
+                    WHERE v.id = ${videoId}
+                `);
+                await updateVideoScore(videoId);
+
                 return updatedVideoRatings;
             }
         }
@@ -59,6 +71,16 @@ export const videoRatingsRouter = createTRPCRouter({
                     videoId,
                     rating: newRating})
             .returning()
+
+        // Update video rating stats and score
+        await db.execute(sql`
+            UPDATE videos v
+            SET 
+                rating_count = (SELECT COUNT(*) FROM video_ratings WHERE video_id = ${videoId}),
+                average_rating = (SELECT COALESCE(AVG(rating), 0) FROM video_ratings WHERE video_id = ${videoId})
+            WHERE v.id = ${videoId}
+        `);
+        await updateVideoScore(videoId);
 
         return createdVideoRating
     })

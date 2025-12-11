@@ -3,6 +3,7 @@ import { videos, videoViews } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { and, eq, sql } from "drizzle-orm";
 import z from "zod";
+import { updateVideoScore } from "@/modules/videos/server/utils";
 
 
 export const videoViewsRouter = createTRPCRouter({
@@ -68,11 +69,25 @@ export const videoViewsRouter = createTRPCRouter({
                                 eq(videoViews.userId, existingVideoView.userId)
                             ))
                         .returning()
+                    
+                    // Update video view count and score
+                    await db.update(videos)
+                        .set({ viewCount: sql`${videos.viewCount} + 1` })
+                        .where(eq(videos.id, videoId));
+                    await updateVideoScore(videoId);
+
                     return updatedVideoViews;
                 }
                 // return existingVideoView;
             }
         }
+        
+        // Update video view count and score
+        await db.update(videos)
+            .set({ viewCount: sql`${videos.viewCount} + 1` })
+            .where(eq(videos.id, videoId));
+        await updateVideoScore(videoId);
+
       return createdVideoView
     })
 })

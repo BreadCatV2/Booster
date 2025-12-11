@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, uniqueIndex, integer, pgEnum, primaryKey, AnyPgColumn, boolean, index, vector } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, uniqueIndex, integer, pgEnum, primaryKey, AnyPgColumn, boolean, index, vector, real } from "drizzle-orm/pg-core";
 
 import {
     createInsertSchema,
@@ -97,12 +97,19 @@ export const videos = pgTable("videos", {
 
     isAi: boolean("is_ai").notNull().default(false),
     embedding: vector("embedding", { dimensions: 1536 } ), // OpenAI text-embedding-ada-002 dimension is 1536
+
+    viewCount: integer("view_count").default(0).notNull(),
+    commentCount: integer("comment_count").default(0).notNull(),
+    ratingCount: integer("rating_count").default(0).notNull(),
+    averageRating: real("average_rating").default(0).notNull(),
+    trendingScore: integer("trending_score").default(0).notNull(),
 }, (t) => [
     index("videos_user_idx").on(t.userId),
     index("videos_category_idx").on(t.categoryId),
     index("videos_visibility_status_idx").on(t.visibility, t.status),
     index("videos_created_at_idx").on(t.createdAt),
     index("videos_featured_idx").on(t.isFeatured),
+    index("videos_trending_idx").on(t.trendingScore),
 ])
 
 export const videoInsertSchema = createInsertSchema(videos);

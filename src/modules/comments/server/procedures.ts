@@ -4,6 +4,7 @@ import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init
 import { TRPCError } from "@trpc/server";
 import { eq, getTableColumns, inArray, desc, sql, or, and, lt, isNull, asc } from "drizzle-orm";
 import z from "zod";
+import { updateVideoScore } from "@/modules/videos/server/utils";
 
 export const commentsRouter = createTRPCRouter({
   getTopLevel: baseProcedure
@@ -188,6 +189,12 @@ export const commentsRouter = createTRPCRouter({
         });
       }
 
+      // Update video comment count and score
+      await db.update(videos)
+        .set({ commentCount: sql`${videos.commentCount} + 1` })
+        .where(eq(videos.id, videoId));
+      await updateVideoScore(videoId);
+
       return createdComment;
     }),
 
@@ -257,6 +264,12 @@ export const commentsRouter = createTRPCRouter({
             replies: sql`${comments.replies} + 1`
           }).where(eq(comments.commentId,parentId))
         .returning()
+
+      // Update video comment count and score
+      await db.update(videos)
+        .set({ commentCount: sql`${videos.commentCount} + 1` })
+        .where(eq(videos.id, videoId));
+      await updateVideoScore(videoId);
 
       return createdComment;
     }),

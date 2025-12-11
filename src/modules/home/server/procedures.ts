@@ -49,7 +49,7 @@ export const homeRouter = createTRPCRouter({
                         videoCount: sql<number>`(SELECT COUNT(*) FROM ${videos} WHERE ${videos.userId} = ${users.id})`.mapWith(Number),
                         viewerRating : (userId ? sql<number>`(SELECT ${videoRatings.rating} FROM ${videoRatings} WHERE ${videoRatings.userId} = ${userId} AND ${videoRatings.videoId} = ${videos.id} LIMIT 1)`.mapWith(Number) : sql<number>`(NULL)`.mapWith(Number)),
                     },
-                    videoRatings: db.$count(videoRatings, eq(videoRatings.videoId, videos.id)), //inefficient?
+                    videoRatings: videos.ratingCount,
                 })
                 .from(videos)
                 .innerJoin(users, eq(videos.userId, users.id))
@@ -63,29 +63,10 @@ export const homeRouter = createTRPCRouter({
                 throw new TRPCError({ code: "NOT_FOUND" })
             }
 
-            const [viewCount] = await db
-                .select({
-                    count: sum(videoViews.seen)
-                })
-                .from(videoViews)
-                .where(eq(videoViews.videoId, input.id))
-
-
-
-
-            const [averageRating] = await db
-                .select({
-                    averageRating: avg(videoRatings.rating)
-                }).from(videoRatings)
-                .where(eq(videoRatings.videoId, input.id))
-
-
-
-            const average = Number(averageRating?.averageRating ?? 0);
             return {
                 ...existingVideo,
-                videoViews: Number(viewCount.count ?? 0),
-                averageRating: average,
+                videoViews: existingVideo.viewCount,
+                averageRating: existingVideo.averageRating,
                 viewer: user,
             }
         }),
@@ -138,25 +119,14 @@ export const homeRouter = createTRPCRouter({
 
             //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
             // Give featured videos a boost in the score calculation
-            const scoreExpr = sql<number>`
-                    LN(
-                        POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 1)
-                        + LN(GREATEST(COALESCE(${viewsAgg.viewCount}, 0), 1))
-                        + TANH(COALESCE(${ratingsAgg.avgRating}, 0) - 3.5) 
-                        * LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        + CASE WHEN ${videos.isFeatured} = true THEN 5.0 ELSE 0.0 END
-                    )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                    `;
-
+            
             const whereParts: any[] = [and(eq(videos.visibility, "public"), not(eq(videos.status, "processing")))]
 
             if (cursor && cursor.score != null) {
                 whereParts.push(
                     or(
-                        lt(scoreExpr, cursor.score),
-                        and(sql`${scoreExpr} = ${cursor.score}`, lt(videos.id, cursor.id))
+                        lt(videos.trendingScore, cursor.score),
+                        and(eq(videos.trendingScore, cursor.score), lt(videos.id, cursor.id))
                     )
                 );
             }
@@ -167,26 +137,11 @@ export const homeRouter = createTRPCRouter({
                     id: videos.id,
                     updatedAt: videos.updatedAt,
                     isFeatured: videos.isFeatured,
-                    score: sql<number>`
-                    LN(
-                        POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 1)
-                        + LN(GREATEST(COALESCE(${viewsAgg.viewCount}, 0), 1))
-                        + TANH(COALESCE(${ratingsAgg.avgRating}, 0) - 3.5) 
-                        * LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        + CASE WHEN ${videos.isFeatured} = true THEN 5.0 ELSE 0.0 END
-                    )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-
-                        `.as("score"),
+                    score: videos.trendingScore,
                 })
                 .from(videos)
-                .leftJoin(users, eq(users.id, videos.userId))
-                .leftJoin(ratingsAgg, eq(ratingsAgg.videoId, videos.id))
-                .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
-                .leftJoin(viewsAgg, eq(viewsAgg.videoId, videos.id))
                 .where(and(...whereParts))
-                .orderBy(desc(sql`score`))
+                .orderBy(desc(videos.trendingScore), desc(videos.id))
                 .limit(limit + 1);
 
 
