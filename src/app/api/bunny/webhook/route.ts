@@ -92,6 +92,11 @@ export async function POST(req: Request) {
 
     const status = statusMap.get(rawStatus);
     console.log("THUMBNAIL URL", thumbnailUrl);
+    
+    // Only mark as completed when fully finished (status 3)
+    // Status 4 is "resolution_finished" (e.g. 360p ready), so we keep it as processing
+    const dbStatus = rawStatus === '3' ? 'completed' : 'processing';
+
     await db
       .update(videos)
       .set({
@@ -103,7 +108,7 @@ export async function POST(req: Request) {
         previewKey,
         previewUrl, // store for convenience (unsigned)
         updatedAt: new Date(),
-        status: "completed",
+        status: dbStatus,
       })
       .where(eq(videos.bunnyVideoId, videoId));
 

@@ -39,7 +39,7 @@ const items = [
 export const MainSection = () => {
     const { isSignedIn } = useAuth();
     const clerk = useClerk();
-    const [activeItem, setActiveItem] = useState("Explorer");
+    const [activeItem, setActiveItem] = useState("");
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
     useEffect(() => {
@@ -50,6 +50,9 @@ export const MainSection = () => {
         );
         if (currentItem) {
             setActiveItem(currentItem.title);
+        } else {
+            // If no item matches (e.g. /rankings), clear the active item
+            setActiveItem("");
         }
     }, []);
 

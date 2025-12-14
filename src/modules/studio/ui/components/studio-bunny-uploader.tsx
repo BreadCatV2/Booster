@@ -215,9 +215,29 @@ export const StudioBunnyUploader = ({ onSuccess, onUploadStarted, children }: St
                     <Loader2 className="h-5 w-5 text-primary animate-spin" />
                 </div>
                 <div className="text-center">
-                    <p className="text-sm font-medium truncate max-w-xs">Processing video...</p>
+                    <p className="text-sm font-medium truncate max-w-xs">
+                        {(() => {
+                            switch (video?.bunnyStatus) {
+                                case 'queued': return 'Video queued...';
+                                case 'processing': return 'Processing video...';
+                                case 'encoding': return 'Transcoding video...';
+                                case 'resolution_finished': return 'Optimizing quality...';
+                                case 'failed': return 'Processing failed';
+                                default: return 'Processing video...';
+                            }
+                        })()}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                        This might take a moment
+                        {(() => {
+                            switch (video?.bunnyStatus) {
+                                case 'queued': return 'Waiting in line to be processed';
+                                case 'processing': return 'Analyzing video file';
+                                case 'encoding': return 'Converting to multiple formats';
+                                case 'resolution_finished': return 'You can preview it now in lower quality';
+                                case 'failed': return 'Something went wrong';
+                                default: return 'This might take a moment';
+                            }
+                        })()}
                     </p>
                 </div>
             </div>

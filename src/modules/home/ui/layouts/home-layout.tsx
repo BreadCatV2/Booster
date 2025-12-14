@@ -7,11 +7,12 @@ import { ExplorerSidebar } from "@/modules/explorer/ui/components/explorer-sideb
 
 interface HomeLayoutProps {
     children: React.ReactNode;
+    defaultOpen?: boolean;
 }
 
-export const HomeLayout = ({children}: HomeLayoutProps) => {
+export const HomeLayout = ({children, defaultOpen = false}: HomeLayoutProps) => {
     return (
-        <SidebarProvider defaultOpen={false}>
+        <SidebarProvider defaultOpen={defaultOpen}>
             <div className='w-full'>
                 <ExplorerNavBar />
                 <div className="flex min-h-screen pt-[4rem] bg-background">

@@ -184,7 +184,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
     {
       refetchInterval: (query) => {
         const status = query.state.data?.status;
-        return status === "processing" || status === "waiting" || !status ? 3000 : false;
+        return status === "processing" || status === "waiting" || !status ? 1000 : false;
       },
     }
   );
@@ -586,9 +586,17 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                                         thumbnailUrl={video.thumbnailUrl}
                                     /> */}
                   <BunnyEmbed
+                    key={video.bunnyStatus}
                     libraryId={video.bunnyLibraryId}
                     videoId={video.bunnyVideoId}
                   />
+                  {/* Overlay for processing state */}
+                  {(video.bunnyStatus === 'processing' || video.bunnyStatus === 'encoding' || video.bunnyStatus === 'queued') && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10">
+                      <Loader2 className="h-8 w-8 text-white animate-spin mb-2" />
+                      <p className="text-white text-sm font-medium">Processing Preview...</p>
+                    </div>
+                  )}
                   {/* <Player src={video.playbackUrl} thumbnailUrl={video.thumbnailUrl ?? THUMBNAIL_FALLBACK} /> */}
                 </div>
 
