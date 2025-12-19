@@ -10,7 +10,7 @@ import { CommentOutput } from "@/modules/videos/types";
 import { trpc } from "@/trpc/client";
 import { useClerk, useAuth } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, MoreHorizontal, ChevronDown, ChevronUp, } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, ChevronDown, ChevronUp, Trash2, Edit2 } from "lucide-react";
 import { useMemo, useState, useCallback } from "react";
 import { useClampDetector } from "../../hooks/resize-hook";
 import { CommentReplyInput } from "./comment-reply-input";
@@ -18,6 +18,12 @@ import { User } from "@/modules/users/types";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 import { toast } from "sonner";
 import { getUserIcons } from "@/modules/market/components/assetIcons/functions/get-user-icons";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Comment = CommentOutput[0];
 
@@ -41,6 +47,40 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const { setRefFor, isClamped } = useClampDetector();
     const [replyingTo, setReplyingTo] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedText, setEditedText] = useState(parentComment.comment);
+
+    const remove = trpc.comments.remove.useMutation({
+        onSuccess: () => {
+            toast.success("Comment deleted");
+            utils.comments.getTopLevel.invalidate({ videoId, limit: COMMENT_SECTION_SIZE });
+            if (parentComment.parentId) {
+                utils.comments.getReplies.invalidate({ commentId: parentComment.parentId, videoId, limit: COMMENT_REPLIES_SIZE });
+            }
+        },
+        onError: () => {
+            toast.error("Failed to delete comment");
+        }
+    });
+
+    const update = trpc.comments.update.useMutation({
+        onSuccess: () => {
+            toast.success("Comment updated");
+            setIsEditing(false);
+            utils.comments.getTopLevel.invalidate({ videoId, limit: COMMENT_SECTION_SIZE });
+            if (parentComment.parentId) {
+                utils.comments.getReplies.invalidate({ commentId: parentComment.parentId, videoId, limit: COMMENT_REPLIES_SIZE });
+            }
+        },
+        onError: () => {
+            toast.error("Failed to update comment");
+        }
+    });
+
+    const handleUpdate = () => {
+        if (!editedText.trim()) return;
+        update.mutate({ commentId: parentComment.commentId, comment: editedText });
+    }
 
     // Determine if the current viewer is the comment author
     // const isViewerCommentAuthor = viewer?.id === parentComment.userId;
@@ -243,29 +283,74 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
                                 {compactDate(parentComment.createdAt) ?? ""}
                             </span>
 
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-                            >
-                                <MoreHorizontal className="w-4 h-4" />
-                            </motion.button>
+                            {viewer?.id === parentComment.userId && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            className="opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                                        >
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </motion.button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => {
+                                            setEditedText(parentComment.comment);
+                                            setIsEditing(true);
+                                        }}>
+                                            <Edit2 className="w-4 h-4 mr-2" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => remove.mutate({ commentId: parentComment.commentId })} className="text-red-600 focus:text-red-600">
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                         </div>
                         <UserTitle userId={parentComment.userId} size="xs" />
                     </div>
 
-                    <p
-                        ref={setRefFor(parentComment.commentId)}
-                        className={[
-                            "text-sm text-gray-800 dark:text-gray-200 mb-2 max-w-xs text-left",
-                            "whitespace-pre-wrap break-words",
-                            expanded[parentComment.commentId] ? "" : "line-clamp-2",
-                        ].join(" ")}
-                    >
-                        {parentComment.comment}
-                    </p>
+                    {isEditing ? (
+                        <div className="flex flex-col gap-2">
+                            <textarea
+                                value={editedText}
+                                onChange={(e) => setEditedText(e.target.value)}
+                                className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-lg p-2 text-sm outline-none focus:border-amber-500 transition-colors resize-none"
+                                rows={2}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdate}
+                                    disabled={update.isPending}
+                                    className="text-xs bg-amber-500 text-white px-3 py-1 rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50"
+                                >
+                                    {update.isPending ? "Saving..." : "Save"}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p
+                            ref={setRefFor(parentComment.commentId)}
+                            className={[
+                                "text-sm text-gray-800 dark:text-gray-200 mb-2 max-w-xs text-left",
+                                "whitespace-pre-wrap break-words",
+                                expanded[parentComment.commentId] ? "" : "line-clamp-2",
+                            ].join(" ")}
+                        >
+                            {parentComment.comment}
+                        </p>
+                    )}
 
-                    {(expanded[parentComment.commentId] || isClamped[parentComment.commentId]) && (
+                    {(expanded[parentComment.commentId] || isClamped[parentComment.commentId]) && !isEditing && (
                         <button
                             className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
                             onClick={() =>

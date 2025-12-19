@@ -9,7 +9,7 @@ export const updateVideoScore = async (videoId: string) => {
                 (
                     LN(
                         POWER(COALESCE(SQRT(u.boost_points * 1000) / 1000, 0) + 1, 1)
-                        + LN(GREATEST(COALESCE(v.view_count, 0), 1))
+                        + LN(GREATEST(COALESCE((SELECT SUM(seen) FROM video_views WHERE video_id = v.id), 0), 1))
                         + TANH(COALESCE(v.average_rating, 0) - 3.5) 
                         * LN(GREATEST(COALESCE(v.rating_count, 0), 1))
                         + LN(GREATEST(COALESCE(v.rating_count, 0), 1))
