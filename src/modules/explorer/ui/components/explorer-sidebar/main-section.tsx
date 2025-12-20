@@ -123,13 +123,13 @@ export const MainSection = () => {
                                             : 'hover:bg-accent/30'
                                         }
                                         group
-                                        h-10 
+                                        h-12 
                                         mx-0.5 
                                     `}
                                 >
                                     <Link 
                                         href={item.url} 
-                                        className="flex items-center gap-2 w-full h-full  relative z-10"
+                                        className="flex items-center gap-3 w-full h-full  relative z-10"
                                     >
                                         {/* Icon container - simplified for collapsed mode */}
                                         <div className={`
@@ -140,16 +140,16 @@ export const MainSection = () => {
                                                 : 'bg-muted text-muted-foreground group-hover:bg-amber-500/10 group-hover:text-foreground'
                                             }
                                             rounded-lg
-                                            w-6 h-6 /* Smaller size for collapsed mode */
-                                            min-w-[1.5rem] /* Prevent shrinking */
+                                            w-8 h-8 /* Smaller size for collapsed mode */
+                                            min-w-[2rem] /* Prevent shrinking */
                                             flex-shrink-0 /* Prevent shrinking in flex container */
                                         `}>
-                                            <Icon className="w-4 h-4" /> {/* Smaller icon */}
+                                            <Icon className="w-5 h-5" /> {/* Smaller icon */}
                                         </div>
                                         
                                         {/* Text - will be hidden by sidebar when collapsed */}
                                         <span className={`
-                                            text-sm font-medium transition-all duration-200
+                                            text-base font-medium transition-all duration-200
                                             ${isActive 
                                                 ? 'text-foreground font-semibold' 
                                                 : 'text-muted-foreground group-hover:text-foreground'

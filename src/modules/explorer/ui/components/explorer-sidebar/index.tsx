@@ -3,7 +3,8 @@ import { MainSection } from "./main-section"
 import { Separator } from "@/components/ui/separator"
 import { RankingsSection } from "./rankings-section"
 import { FooterSection } from "./footer-section"
-// import { PersonalSection } from "./personal-section"
+import { FollowingSection } from "./following-section"
+import { PersonalSection } from "./personal-section"
 
 
 interface Props {
@@ -17,8 +18,9 @@ export const ExplorerSidebar = ({ collapsible, variant }: Props) => {
                 <MainSection />
                 <Separator />
                 <RankingsSection />
+                <FollowingSection />
+                <PersonalSection />
                 <FooterSection />
-                {/* <PersonalSection /> */}
             </SidebarContent>
         </Sidebar>
     )

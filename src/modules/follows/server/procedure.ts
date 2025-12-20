@@ -1,12 +1,12 @@
 import { db } from "@/db";
-import { userFollows, users, notifications } from "@/db/schema";
+import { userFollows, users, notifications, videos } from "@/db/schema";
 import {
   createTRPCRouter,
   protectedProcedure,
   baseProcedure,
 } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { sql, eq, and, inArray, getTableColumns, } from "drizzle-orm";
+import { sql, eq, and, inArray, getTableColumns, desc } from "drizzle-orm";
 import z from "zod";
 
 export const followsRouter = createTRPCRouter({
@@ -162,4 +162,31 @@ export const followsRouter = createTRPCRouter({
     // console.log(following,userId,clerkUserId)
     return following;
   }),
+
+  getFollowingWithRecentUploads: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { user } = ctx;
+
+      const recentUploaders = await db
+        .select({
+          user: users,
+          lastUploadDate: sql<Date>`MAX(${videos.createdAt})`.as("last_upload_date")
+        })
+        .from(users)
+        .innerJoin(userFollows, eq(users.id, userFollows.creatorId))
+        .innerJoin(videos, eq(users.id, videos.userId))
+        .where(and(
+          eq(userFollows.userId, user.id),
+          eq(videos.status, 'completed'),
+          eq(videos.visibility, 'public')
+        ))
+        .groupBy(users.id)
+        .orderBy(desc(sql`last_upload_date`))
+        .limit(5);
+
+      return recentUploaders.map(r => ({
+        ...r.user,
+        lastUploadDate: r.lastUploadDate
+      }));
+    }),
 });
