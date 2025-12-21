@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useEffect } from 'react';
 
 import 'katex/dist/katex.min.css';
-import Latex from 'react-latex-next';
+import { BlockMath } from "react-katex";
 
 
 export const About = () => {
@@ -93,7 +93,7 @@ export const About = () => {
     );
 
     const formula = String.raw`
-$$
+
 \begin{aligned}
 score(x) &= ln\Bigg(
   \Big(\frac{\sqrt{1000 \cdot boostPoints}}{1000} + 1\Big)^{2}
@@ -104,7 +104,7 @@ score(x) &= ln\Bigg(
   + \frac{\sqrt{1000 \cdot boostPoints}}{1000}
 \Bigg)
 \end{aligned}
-$$
+
 `.trim();
 
 
@@ -292,7 +292,8 @@ $$
 
                                     <div className="bg-gradient-to-r from-gray-900/5 to-gray-900/10 dark:from-white/5 dark:to-white/10 rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50">
                                         <div className="text-xl md:text-2xl font-mono text-center p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <Latex strict>{formula}</Latex>
+                                            <BlockMath math={formula} />
+
                                         </div>
                                     </div>
                                 </div>
