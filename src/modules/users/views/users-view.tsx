@@ -9,6 +9,7 @@ import { getTitleGradient } from "@/constants";
 import {
   Check,
   EyeIcon,
+  EyeOff,
   Lock,
   Rocket,
   Sparkles,
@@ -16,6 +17,7 @@ import {
   Settings,
   MessageSquare,
   Clapperboard,
+  VideoOff,
 } from "lucide-react";
 import { XpCard } from "@/modules/home/ui/components/xp-card";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
@@ -397,26 +399,15 @@ export const UsersView = ({ userId }: Props) => {
                 {user.accountType !== 'business' && (
                   <div className="mt-6">
                     <h3 className="text-primary font-semibold mb-3">
-                      Unlocked Rewards
+                      Next Reward
                     </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm">
-                        <span className="text-primary mr-2">
-                          <Check className="size-4" />
-                        </span>
-                        <span>Custom Emotes</span>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/50 pr-10">
+                      <div className="bg-background p-2 rounded-lg shadow-sm">
+                        <Lock className="size-5 text-primary" />
                       </div>
-                      <div className="flex items-center text-sm">
-                        <span className="text-primary mr-2">
-                          <Check className="size-4" />
-                        </span>
-                        <span>Extended Video Upload Quality</span>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <span className="text-primary mr-2">
-                          <Lock className="size-4" />
-                        </span>
-                        <span>Verified</span>
+                      <div>
+                        <p className="font-medium text-sm">Verified Badge</p>
+                        <p className="text-xs text-muted-foreground">Unlocks at Level 10</p>
                       </div>
                     </div>
                   </div>
@@ -454,44 +445,77 @@ export const UsersView = ({ userId }: Props) => {
         </div>
 
         {/* Video Grid */}
-        {activeTab === "videos" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {userVideos.userVideos.map((video) => (
-              <Link
-                key={video.id}
-                className="group bg-card border border-border rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer shadow-sm"
-                href={`/videos/${video.id}`}
-              >
-                <div className="relative overflow-hidden rounded-t-2xl">
-                  <VideoThumbnail
-                    duration={video.duration || 0}
-                    title={video.title}
-                    imageUrl={video.thumbnailUrl}
-                    previewUrl={video.previewUrl}
-                  />
+        {activeTab === "videos" && (() => {
+          const filteredVideos = userVideos.userVideos.filter(video => isOwnProfile || video.visibility === 'public');
+
+          if (filteredVideos.length === 0) {
+            return (
+              <div className="flex flex-col items-center justify-center py-20 mt-6 border border-dashed border-border rounded-2xl bg-muted/10">
+                <div className="bg-muted/50 rounded-full p-6 mb-4">
+                  <VideoOff className="size-12 text-muted-foreground" />
                 </div>
-                <div className="p-3">
-                  <h3 className="font-semibold line-clamp-2 mb-2 text-foreground">
-                    {video.title || "Untitled Video"}
-                  </h3>
-                  <div className="flex justify-between text-muted-foreground text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <EyeIcon className="size-4" />
-                        {compactNumber(Number(video.videoViews) || 0)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <StarIcon className="size-4 text-yellow-500 dark:text-yellow-300" />
-                        {(Number(video.averageRating) || 0).toFixed(1)}
-                      </span>
-                    </div>
-                    <span>{compactDate(video.createdAt)}</span>
+                <h3 className="text-xl font-semibold text-foreground mb-2">No videos found</h3>
+                <p className="text-muted-foreground text-center max-w-sm px-4">
+                  {isOwnProfile
+                    ? "You haven't uploaded any videos yet."
+                    : "This user hasn't uploaded any videos yet or they are private."}
+                </p>
+                {isOwnProfile && (
+                  <Link href="/studio">
+                    <Button className="mt-6 rounded-full" variant="default">
+                      <Clapperboard className="size-4 mr-2" />
+                      Go to Studio
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {filteredVideos.map((video) => (
+                <Link
+                  key={video.id}
+                  className="group bg-card border border-border rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer shadow-sm"
+                  href={`/videos/${video.id}`}
+                >
+                  <div className="relative overflow-hidden rounded-t-2xl">
+                    <VideoThumbnail
+                      duration={video.duration || 0}
+                      title={video.title}
+                      imageUrl={video.thumbnailUrl}
+                      previewUrl={video.previewUrl}
+                    />
+                    {video.visibility === 'private' && (
+                      <div className="absolute top-2 left-2 bg-black/60 rounded-md p-1">
+                        <EyeOff className="size-4 text-white" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                  <div className="p-3">
+                    <h3 className="font-semibold line-clamp-2 mb-2 text-foreground">
+                      {video.title || "Untitled Video"}
+                    </h3>
+                    <div className="flex justify-between text-muted-foreground text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <EyeIcon className="size-4" />
+                          {compactNumber(Number(video.videoViews) || 0)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <StarIcon className="size-4 text-yellow-500 dark:text-yellow-300" />
+                          {(Number(video.averageRating) || 0).toFixed(1)}
+                        </span>
+                      </div>
+                      <span>{compactDate(video.createdAt)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          );
+        })()}
 
         {activeTab === "community" && <BoosterRankings userId={userId} />}
 
