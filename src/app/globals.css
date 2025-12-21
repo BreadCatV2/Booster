@@ -173,3 +173,9 @@ body {
 .formula .katex {
     white-space: nowrap;
 }
+
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25rem 0;
+}

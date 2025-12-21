@@ -17,7 +17,6 @@ import { useAuth } from "@clerk/nextjs";
 
 import { UserIcon } from "@/modules/market/components/assetIcons/functions/get-user-icons";
 import { WelcomeBonusModal } from "@/modules/xp/ui/components/welcome-bonus-modal";
-import { WelcomePopup } from "@/components/welcome-popup";
 import {
   Carousel,
   CarouselContent,
