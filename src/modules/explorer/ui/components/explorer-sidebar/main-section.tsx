@@ -75,7 +75,6 @@ export const MainSection = () => {
         if (currentItem) {
             setActiveItem(currentItem.title);
         } else {
-            // If no item matches (e.g. /rankings), clear the active item
             setActiveItem("");
         }
     }, [displayItems]);

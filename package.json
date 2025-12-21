@@ -96,6 +96,7 @@
         "react-dropzone": "^14.3.8",
         "react-error-boundary": "4.0.13",
         "react-hook-form": "^7.62.0",
+        "react-latex-next": "^3.0.0",
         "react-resizable-panels": "^3.0.5",
         "react-swipeable": "^7.0.2",
         "recharts": "^2.15.4",

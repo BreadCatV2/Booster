@@ -1,8 +1,12 @@
 'use client';
 
-import { Boxes, CircleDollarSignIcon, Copyright, Headset, Megaphone, UsersRound } from 'lucide-react';
+import { Boxes, CircleDollarSignIcon, Copyright, CpuIcon, Headset, Megaphone, UsersRound } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
+
+import 'katex/dist/katex.min.css';
+import Latex from 'react-latex-next';
+
 
 export const About = () => {
     useEffect(() => {
@@ -88,8 +92,26 @@ export const About = () => {
         </div>
     );
 
+    const formula = String.raw`
+$$
+\begin{aligned}
+score(x) &= ln\Bigg(
+  \Big(\frac{\sqrt{1000 \cdot boostPoints}}{1000} + 1\Big)^{2}
+  + videoViews \\
+&\quad + \tanh(averageRating - 3.5) \cdot ln(\max(ratings, 1)) \\
+&\quad + ln(\max(ratings, 1))
+  + \ln(\max(comments, 1))
+  + \frac{\sqrt{1000 \cdot boostPoints}}{1000}
+\Bigg)
+\end{aligned}
+$$
+`.trim();
+
+
+
+
     return (
-        <div className="min-h-screen bg-background text-foreground py-8 px-4">
+        <div className="min-h-screen bg-background text-foreground py-8">
             <div className="max-w-7xl mx-auto">
                 <header className="flex items-center justify-center mb-12 py-8">
                     <h1 className="flex items-center gap-5 text-5xl font-bold bg-gradient-to-r from-[#ffca55] to-[#ffa100] bg-clip-text text-transparent mb-4">
@@ -184,6 +206,129 @@ export const About = () => {
                             buttonText="Get Support"
                         />
                     </div>
+
+                    {/*Algorithm explanation*/}
+                    <span id='recommendation_algorithm'></span>
+
+                    <div className='border-t border-gradient-to-r from-transparent via-primary/20 to-transparent pt-12 pb-8 px-4 md:px-6 relative overflow-hidden' >
+
+                        {/* Animated background elements */}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+                        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/5 rounded-full blur-3xl"></div>
+
+                        {/* Title Section */}
+                        <div className='flex flex-col md:flex-row items-start md:items-center gap-4 mb-10 relative z-10'>
+                            <div className='flex items-center gap-3'>
+                                <div className="w-2 h-10 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+                                <p className='text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 via-gray-900 to-black dark:from-gray-100 dark:via-gray-200 dark:to-white bg-clip-text text-transparent'>
+                                    The Recommendation
+                                </p>
+                            </div>
+
+                            <div className="relative group">
+                                <span className="absolute -inset-2 bg-gradient-to-r from-primary to-secondary rounded-xl blur-xl opacity-30 group-hover:opacity-50 transition-all duration-300 "></span>
+                                <span className="relative bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text font-bold text-5xl md:text-6xl select-none tracking-tight">
+                                    Algorithm
+                                </span>
+                                <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+                            </div>
+
+                            {/* Algorithm Icon */}
+                            <div className="absolute right-0 -top-2 opacity-10 md:opacity-20">
+                                <CpuIcon className='size-20' />
+                            </div>
+                        </div>
+
+                        {/* Explanation Section */}
+                        <div className="relative z-10">
+                            <div className="bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-900/80 dark:to-gray-800/80 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-primary/5">
+
+                                <div className="flex items-start gap-4 mb-6">
+                                    <div className="hidden md:block mt-1">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <div className='relative'>
+                                        <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                            How Videos Get Recommended
+                                        </h3>
+                                        <h2 className='text-xl absolute top-0 right-0 font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent'>(version v.0-beta)</h2>
+                                        <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed mb-6">
+                                            Booster implements a video recommendation algorithm that mathematically evaluates multiple factors to get the best content. Here are the key metrics that influence video scores:
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Metrics Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                                    {[
+                                        { title: 'Channel Boost Level', desc: 'Primary influence on video scoring' },
+                                        { title: 'Channel Followers', desc: 'Audience size and engagement' },
+                                        { title: 'Video Views', desc: 'Popularity and reach metric' },
+                                        { title: 'Average Rating', desc: 'Community quality assessment' },
+                                        { title: 'Comments', desc: 'Engagement and discussion level' },
+                                    ].map((metric, index) => (
+                                        <div key={index} className="group p-4 rounded-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 hover:border-primary/30 transition-all duration-300 ">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h4 className="font-bold text-gray-900 dark:text-white">{metric.title}</h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{metric.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Formula Section */}
+                                <div className="mb-8">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-6 h-0.5 bg-gradient-to-r from-primary to-secondary"></div>
+                                        <h4 className="text-xl font-bold text-gray-900 dark:text-white">The Scoring Formula</h4>
+                                        <div className="w-6 h-0.5 bg-gradient-to-r from-primary to-secondary"></div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-gray-900/5 to-gray-900/10 dark:from-white/5 dark:to-white/10 rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+                                        <div className="text-xl md:text-2xl font-mono text-center p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <Latex strict>{formula}</Latex>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Call to Action */}
+                                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-l-4 border-primary rounded-r-xl p-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="hidden md:block">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
+                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                                Boost Your Favorites!
+                                            </h4>
+                                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                Videos are sorted by descending score. As a creator or viewer, you can influence rankings by:
+                                                <ul className="list-disc pl-5 mt-3 space-y-2">
+                                                    <li className="text-gray-700 dark:text-gray-300">Boosting channels with XP to increase their level</li>
+                                                    <li className="text-gray-700 dark:text-gray-300">Commenting on videos you enjoy</li>
+                                                    <li className="text-gray-700 dark:text-gray-300">Rating videos to provide quality feedback</li>
+                                                    <li className="text-gray-700 dark:text-gray-300">Following channels you want to support</li>
+                                                </ul>
+
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <footer className="flex text-center gap-2 justify-center items-center mt-16 py-8 border-t border-gray-700">
@@ -191,6 +336,6 @@ export const About = () => {
                     <p className="text-gray-400"> 2025 Booster. All rights reserved.</p>
                 </footer>
             </div>
-        </div>
+        </div >
     );
 };
