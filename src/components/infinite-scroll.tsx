@@ -7,17 +7,22 @@ interface InfiniteScrollProps {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     fetchNextPage: () => void;
+    rootMargin?: string;
+    threshold?: number | number[];
 }
 
 export const InfiniteScroll = ({
     isManual=false, 
     hasNextPage, 
     isFetchingNextPage, 
-    fetchNextPage}: InfiniteScrollProps) => {
+    fetchNextPage,
+    rootMargin = '100px',
+    threshold = 0.5
+}: InfiniteScrollProps) => {
     
     const {targetRef, isIntersecting} = useIntersectionObserver({
-        threshold: 0.5,
-        rootMargin: '100px',
+        threshold,
+        rootMargin,
     });
 
 

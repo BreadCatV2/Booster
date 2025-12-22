@@ -1,7 +1,7 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
 import { CategoriesSection } from "../sections/categories-section";
-import { Play, Eye, ArrowRight, StarIcon, Calendar1, RocketIcon, Trophy } from "lucide-react";
+import { Play, Eye, ArrowRight, StarIcon, Calendar1, RocketIcon, Trophy, Loader2 } from "lucide-react";
 import { useState, useMemo, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
@@ -119,6 +119,33 @@ const ExplorerSkeleton = () => {
     );
 };
 
+const VideoGridSkeleton = () => {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 mt-6">
+            {[...Array(12)].map((_, index) => (
+                <div key={index} className="group relative animate-pulse">
+                    <div className="relative bg-gray-200 dark:bg-gray-800 rounded-2xl overflow-hidden">
+                        <div className="aspect-video bg-gray-300 dark:bg-gray-700"></div>
+                        <div className="p-4 space-y-3">
+                            <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-lg w-3/4"></div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                                <div className="flex-1">
+                                    <div className="w-24 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="w-20 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                                <div className="w-16 h-4 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
     // const [selectedCategory] = useState(categoryId || "all");
 
@@ -164,11 +191,11 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
         const [data, query] = (
             isAiMode
                 ? trpc.explorer.aiSearch.useSuspenseInfiniteQuery(
-                        { text: aiQuery || "", limit: DEFAULT_LIMIT * 2 },
+                        { text: aiQuery || "", limit: 12 },
                         { getNextPageParam: (lastPage) => lastPage.nextCursor }
                     )
                 : trpc.explorer.getMany.useSuspenseInfiniteQuery(
-                        { limit: DEFAULT_LIMIT * 2, categoryId },
+                        { limit: 12, categoryId },
                         { getNextPageParam: (lastPage) => lastPage.nextCursor }
                     )
         ) as any;
@@ -182,6 +209,19 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
     });
     
     const featuredVideos = featuredVideosData || [];
+
+    const filteredVideos = useMemo(() => {
+        return videos.filter((v: any) => !featuredVideos.some((fv: any) => fv.id === v.id));
+    }, [videos, featuredVideos]);
+
+    const columns = useGridColumns();
+    
+    const displayVideos = useMemo(() => {
+        if (!query.hasNextPage) return filteredVideos;
+        const remainder = filteredVideos.length % columns;
+        if (remainder === 0) return filteredVideos;
+        return filteredVideos.slice(0, -remainder);
+    }, [filteredVideos, columns, query.hasNextPage]);
 
 
 
@@ -460,14 +500,11 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                        className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
                     >
-                        {videos.filter(v => !featuredVideos.some(fv => fv.id === v.id)).map((video, index) => (
-                            <motion.div
+                        {displayVideos.map((video: any, index: number) => (
+                            <div
                                 key={video.id}
-                                initial={{ opacity: 0, y: 30,  }}
-                                animate={{ opacity: 1, y: 0,  }}
-                                transition={{ duration: 0.3, delay: Math.floor(((index)/4)) * 0.5 }}
                                 className="group cursor-pointer relative"
                             >
                                 <Link href={`/videos/${video.id}`}>
@@ -577,14 +614,17 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                         </div>
                                     </div>
                                 </Link>
-                            </motion.div>
+                            </div>
                         ))}
                     </motion.div>
                 </AnimatePresence>
             </motion.div>
 
+            {query.isFetchingNextPage && <VideoGridSkeleton />}
+
             <InfiniteScroll
-            
+                rootMargin="400px"
+                threshold={0.5}
                 isManual={false}
                 hasNextPage={query.hasNextPage}
                 isFetchingNextPage={query.isFetchingNextPage}
@@ -599,4 +639,24 @@ const formatCompactNumber = (number: number): string => {
         notation: "compact",
         maximumFractionDigits: 1
     }).format(number);
+};
+
+const useGridColumns = () => {
+    const [columns, setColumns] = useState(1);
+
+    useEffect(() => {
+        const updateColumns = () => {
+            const width = window.innerWidth;
+            if (width >= 1536) setColumns(4); // 2xl
+            else if (width >= 1280) setColumns(3); // xl
+            else if (width >= 1024) setColumns(2); // lg
+            else setColumns(1); // default & md
+        };
+
+        updateColumns();
+        window.addEventListener('resize', updateColumns);
+        return () => window.removeEventListener('resize', updateColumns);
+    }, []);
+
+    return columns;
 };
