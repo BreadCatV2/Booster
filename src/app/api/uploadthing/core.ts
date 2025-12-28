@@ -20,7 +20,7 @@ export const ourFileRouter = {
              * For full list of options and defaults, see the File Route API reference
              * @see https://docs.uploadthing.com/file-routes#route-config
              */
-            maxFileSize: "4MB",
+            maxFileSize: "2MB",
             maxFileCount: 1,
         },
     })
@@ -93,7 +93,7 @@ export const ourFileRouter = {
 
     businessImageUploader: f({
         image: {
-            maxFileSize: "4MB",
+            maxFileSize: "2MB",
             maxFileCount: 5,
         },
     })
@@ -111,6 +111,21 @@ export const ourFileRouter = {
         })
         .onUploadComplete(async ({ metadata, file }) => {
             return { url: file.url, key: file.key };
+        }),
+
+    communityImageUploader: f({
+        image: {
+            maxFileSize: "2MB",
+            maxFileCount: 1,
+        },
+    })
+        .middleware(async () => {
+            const { userId: clerkUserId } = await auth();
+            if (!clerkUserId) throw new UploadThingError("Unauthorized");
+            return { userId: clerkUserId };
+        })
+        .onUploadComplete(async ({ file }) => {
+            return { url: file.url };
         }),
 } satisfies FileRouter;
 

@@ -10,6 +10,8 @@ import {
   videoUpdateSchema,
   videoViews,
   assets,
+  communities,
+  communityModerators,
 } from "@/db/schema";
 import {
   createTRPCRouter,
@@ -418,6 +420,39 @@ export const videosRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
+      if (input.communityId) {
+        const [community] = await db
+          .select({ allowUserPosts: communities.allowUserPosts })
+          .from(communities)
+          .where(eq(communities.communityId, input.communityId));
+
+        if (!community) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Community not found",
+          });
+        }
+
+        if (!community.allowUserPosts) {
+          const [isModerator] = await db
+            .select()
+            .from(communityModerators)
+            .where(
+              and(
+                eq(communityModerators.communityId, input.communityId),
+                eq(communityModerators.userId, userId)
+              )
+            );
+
+          if (!isModerator) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Only moderators can post in this community",
+            });
+          }
+        }
+      }
+
       const textToEmbed = `${input.title}\n${input.description}`;
       const embedding = await embedText(textToEmbed);
 
@@ -428,6 +463,7 @@ export const videosRouter = createTRPCRouter({
           title: input.title,
           description: input.description,
           categoryId: input.categoryId,
+          communityId: input.communityId,
           visibility:
             input.visibility === "private" || input.visibility === "public"
               ? input.visibility

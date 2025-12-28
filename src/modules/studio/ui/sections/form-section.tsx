@@ -189,6 +189,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
     }
   );
   const [categories] = trpc.categories.getMany.useSuspenseQuery();
+  const [communities] = trpc.community.getMany.useSuspenseQuery({ limit: 100 });
 
 
 
@@ -199,8 +200,8 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
       toast.success("Video details updated successfully!");
       
     },
-    onError: () => {
-      toast.error("Something went wrong while updating.");
+    onError: (error) => {
+      toast.error(error.message || "Something went wrong while updating.");
     },
   });
 
@@ -392,6 +393,47 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                               className="rounded-lg px-4 py-3 focus:bg-blue-50 dark:focus:bg-slate-700 transition-colors duration-200"
                             >
                               {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-red-500 text-sm mt-1" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Community Field */}
+              <div className="bg-card p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                <FormField
+                  control={form.control}
+                  name="communityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium text-gray-800 dark:text-white">
+                        Community
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={
+                          field.value !== undefined && field.value !== null
+                            ? String(field.value)
+                            : undefined
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <SelectValue placeholder="Select a community" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="rounded-xl border border-gray-200 shadow-lg bg-card">
+                          {communities.items.map((community) => (
+                            <SelectItem
+                              key={community.communityId}
+                              value={community.communityId}
+                              className="rounded-lg px-4 py-3 focus:bg-blue-50 dark:focus:bg-slate-700 transition-colors duration-200"
+                            >
+                              {community.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

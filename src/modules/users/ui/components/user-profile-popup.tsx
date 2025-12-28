@@ -118,16 +118,18 @@ export const UserProfilePopup = ({
 
   if (trigger === "hover") {
     return (
+        <div className="z-50">
         <HoverCard open={open} onOpenChange={setOpen}>
             <HoverCardTrigger asChild>
                 <Link href={`/users/${userId}`}>
                     {children}
                 </Link>
             </HoverCardTrigger>
-            <HoverCardContent className="w-80 p-0 overflow-hidden rounded-xl shadow-xl border-border/50" align={align} side={side}>
+            <HoverCardContent className="z-50 w-80 p-0 overflow-hidden rounded-xl shadow-xl border-border/50" align={align} side={side}>
                 {content}
             </HoverCardContent>
         </HoverCard>
+        </div>
     )
   }
 

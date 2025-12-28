@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { InfiniteScroll } from "@/components/infinite-scroll";
-import { PostCard } from "../components/post-card";
+import { VideoGridCard } from "@/modules/videos/ui/components/video-grid-card";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
+import { CommunitySettingsModal } from "../components/community-settings-modal";
 
 interface Props {
     communityId: string;
@@ -33,7 +34,7 @@ const CommunityViewSkeleton = () => {
 const CommunityViewSuspense = ({ communityId }: Props) => {
     const utils = trpc.useUtils();
     const [community] = trpc.community.get.useSuspenseQuery({ id: communityId });
-    const [posts, postsQuery] = trpc.community.getPosts.useSuspenseInfiniteQuery(
+    const [videos, videosQuery] = trpc.community.getVideos.useSuspenseInfiniteQuery(
         { communityId, limit: 10 },
         { getNextPageParam: (lastPage) => lastPage.nextCursor }
     );
@@ -66,7 +67,7 @@ const CommunityViewSuspense = ({ communityId }: Props) => {
         }
     };
 
-    const allPosts = posts.pages.flatMap((page) => page.items);
+    const allVideos = videos.pages.flatMap((page) => page.items);
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -91,17 +92,24 @@ const CommunityViewSuspense = ({ communityId }: Props) => {
                     
                     <div className="flex-1 min-w-0 pt-2 md:pt-0">
                         <h1 className="text-3xl font-bold truncate">{community.name}</h1>
-                        <p className="text-muted-foreground text-sm">c/{community.name.toLowerCase().replace(/\s+/g, '')}</p>
+                        <p className="text-muted-foreground text-sm">c@{community.name.toLowerCase().replace(/\s+/g, '')}</p>
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
+                        {community.isModerator && (
+                            <CommunitySettingsModal 
+                                communityId={communityId}
+                                initialData={community}
+                                moderators={community.moderators}
+                            />
+                        )}
                         <Button 
-                            variant={community.isMember ? "outline" : "default"}
-                            className={`rounded-full px-8 ${!community.isMember ? "bg-orange-600 hover:bg-orange-700" : ""}`}
+                            variant={community.isMember ? "ghost" : "default"}
+                            className={`rounded-full px-8 ${!community.isMember ? "bg-secondary" : "bg-secondary opacity-60 text-white"}`}
                             onClick={handleJoinToggle}
                             disabled={joinMutation.isPending || leaveMutation.isPending}
                         >
-                            {community.isMember ? "Joined" : "Join"}
+                            {community.isMember ? "Leave" : "Join"}
                         </Button>
                     </div>
                 </div>
@@ -109,36 +117,26 @@ const CommunityViewSuspense = ({ communityId }: Props) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Main Feed */}
                     <div className="md:col-span-2 space-y-4">
-                        {/* Create Post Placeholder */}
-                        <div className="bg-card border rounded-md p-4 flex items-center gap-2 mb-4">
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback>U</AvatarFallback>
-                            </Avatar>
-                            <input 
-                                type="text" 
-                                placeholder="Create Post" 
-                                className="flex-1 bg-muted/50 border-none rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                            />
-                        </div>
-
-                        {allPosts.length === 0 ? (
+                        
+                        {allVideos.length === 0 ? (
                             <div className="text-center py-10 text-muted-foreground">
-                                No posts yet. Be the first to post!
+                                No videos yet. Be the first to link a video!
                             </div>
                         ) : (
-                            allPosts.map((item) => (
-                                <PostCard 
-                                    key={item.post.id} 
-                                    post={item.post} 
-                                    user={item.user} 
-                                />
-                            ))
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {allVideos.map((item) => (
+                                    <VideoGridCard 
+                                        key={item.video.id} 
+                                        data={item} 
+                                    />
+                                ))}
+                            </div>
                         )}
                         
                         <InfiniteScroll
-                            hasNextPage={postsQuery.hasNextPage}
-                            isFetchingNextPage={postsQuery.isFetchingNextPage}
-                            fetchNextPage={postsQuery.fetchNextPage}
+                            hasNextPage={videosQuery.hasNextPage}
+                            isFetchingNextPage={videosQuery.isFetchingNextPage}
+                            fetchNextPage={videosQuery.fetchNextPage}
                         />
                     </div>
 
@@ -146,7 +144,9 @@ const CommunityViewSuspense = ({ communityId }: Props) => {
                     <div className="hidden md:block space-y-4">
                         <div className="bg-card border rounded-md p-4">
                             <h2 className="font-semibold mb-2 text-sm text-muted-foreground uppercase tracking-wider">About Community</h2>
-                            <p className="text-sm mb-4">{community.description_short || community.description_long || "No description provided."}</p>
+                            <p className="text-sm mb-4">{community.description_short ||  "No description provided."}</p>
+                            <Separator className="my-1" />
+                            <p className="text-sm mb-4">{community.description_long || "No description provided."}</p>
                             
                             <Separator className="my-4" />
                             

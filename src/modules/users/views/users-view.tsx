@@ -348,7 +348,7 @@ export const UsersView = ({ userId }: Props) => {
                     <Button
                       onClick={() => setShowPersonalizeModal(true)}
                       // className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
-                      className="rounded-full shadow-sm hover:from-amber-400 hover:to-orange-400"
+                      className="rounded-full shadow-sm hover:from-amber-400 hover:to-orange-400 bg-gradient-to-b from-primary to-secondary text-textprimary"
                     >
                       <Settings className="size-4 mr-2" />
                       Personalize Channel

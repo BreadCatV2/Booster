@@ -63,6 +63,50 @@ export const categories = pgTable("categories", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("name_idx").on(t.name)])
 
+export const communities = pgTable("communities", {
+    communityId: uuid("id").primaryKey().defaultRandom(),
+    name: text().notNull().unique(),
+    description_short: text(),
+    description_long: text(),
+    banner_url: text("banner_url"),
+    icon_url: text("icon_url"),
+    rules: text("rules"),
+    isPrivate: boolean("is_private").default(false).notNull(),
+    allowUserPosts: boolean("allow_user_posts").default(true).notNull(),
+    categoryId: uuid("category_id").references(() => categories.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+    uniqueIndex("community_name_idx").on(t.name),
+    index("community_category_idx").on(t.categoryId)
+]
+)
+
+export const updateCommunitySchema = createUpdateSchema(communities);
+
+
+
+export const communityMembers = pgTable("community_members", {
+    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    role: text("role").default("member").notNull(), // member, moderator, admin
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.communityId, t.userId] }),
+    index("community_members_user_idx").on(t.userId),
+    index("community_members_community_idx").on(t.communityId)
+]);
+
+export const communityModerators = pgTable("community_moderators", {
+    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.communityId, t.userId] }),
+    index("community_moderators_user_idx").on(t.userId),
+    index("community_moderators_community_idx").on(t.communityId)
+]);
+
 export const videoVisibility = pgEnum("video_visibility", [
     'private',
     'public',
@@ -114,6 +158,10 @@ export const videos = pgTable("videos", {
     }).notNull(),
 
     categoryId: uuid("category_id").references(() => categories.id, {
+        onDelete: 'set null',
+    }),
+
+    communityId: uuid("community_id").references(() => communities.communityId, {
         onDelete: 'set null',
     }),
 
@@ -355,48 +403,5 @@ export const bonusClaims = pgTable("bonus_claims", {
 ])
 
 
-export const communities = pgTable("communities", {
-    communityId: uuid("id").primaryKey().defaultRandom(),
-    name: text().notNull().unique(),
-    description_short: text(),
-    description_long: text(),
-    banner_url: text("banner_url"),
-    icon_url: text("icon_url"),
-    rules: text("rules"),
-    categoryId: uuid("category_id").references(() => categories.id),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (t) => [
-    uniqueIndex("community_name_idx").on(t.name),
-    index("community_category_idx").on(t.categoryId)
-]
-)
 
-export const communityMembers = pgTable("community_members", {
-    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-    role: text("role").default("member").notNull(), // member, moderator, admin
-    joinedAt: timestamp("joined_at").defaultNow().notNull(),
-}, (t) => [
-    primaryKey({ columns: [t.communityId, t.userId] }),
-    index("community_members_user_idx").on(t.userId),
-    index("community_members_community_idx").on(t.communityId)
-]);
 
-export const posts = pgTable("posts", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-    title: text("title").notNull(),
-    content: text("content").notNull(),
-    mediaUrl: text("media_url"),
-    mediaType: text("media_type"), // image, video
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    likes: integer("likes").default(0).notNull(),
-    commentCount: integer("comment_count").default(0).notNull(),
-}, (t) => [
-    index("posts_community_idx").on(t.communityId),
-    index("posts_user_idx").on(t.userId),
-    index("posts_created_at_idx").on(t.createdAt)
-]);

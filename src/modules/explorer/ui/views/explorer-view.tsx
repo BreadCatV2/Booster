@@ -278,7 +278,17 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
 
 
             {/* Enhanced Categories Section */}
-            w
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="relative mt-5"
+            >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent blur-xl transform scale-110" />
+                <div className="relative z-10">
+                    <CategoriesSection categoryId={selectedCategory || "all"} setSelectedCategory={setSelectedCategory}/>
+                </div>
+            </motion.div> 
 
             {/* Placeholder for Featured Video when ads are disabled */}
             {featuredVideos.length > 0 && !rewardedAdsEnabled && (
@@ -548,7 +558,7 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                         </Link>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p className="text-black text-base">Click me to know how does the algorithm work :)</p>
+                                        <p className="text-black text-base">Click me to know how the algorithm works :)</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>

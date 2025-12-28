@@ -72,14 +72,7 @@ export const CommunityCard = ({ community }: CommunityCardProps) => {
                     </div>
                 </div>
 
-                {/* Join Button */}
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="shrink-0 rounded-full px-4"
-                >
-                    Join
-                </Button>
+               
             </Card>
         </Link>
     );

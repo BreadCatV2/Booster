@@ -1,5 +1,6 @@
-import { CommunitiesView } from "@/modules/community/ui/views/communities-explore-view";
-import { HydrateClient } from "@/trpc/server";
+import { DEFAULT_COMMUNITIES_LIMIT } from "@/constants";
+import { CommunitiesSection } from "@/modules/community/ui/sections/communities-section";
+import { HydrateClient,trpc } from "@/trpc/server";
 
 export const dynamic = 'force-dynamic'; //IMPORTANT: WE DON'T AWAIT. BUT RATHER WE PREFETCH
 
@@ -11,14 +12,15 @@ interface Props{
 
 const Page = async ({searchParams}:Props) => {    
 
+
     const {categoryId} = await searchParams;
 
     //todo: prefetch communities
-    
+    void trpc.community.getMany.prefetchInfinite({categoryId, limit: DEFAULT_COMMUNITIES_LIMIT});
     
     return (
         <HydrateClient>
-            <CommunitiesView categoryId={categoryId}/>
+            <CommunitiesSection categoryId={categoryId}/>
         </HydrateClient>
     )
 }

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { boostTransactions, notifications, userAssets, users, videos, bonusClaims } from "@/db/schema";
+import { boostTransactions, notifications, userAssets, users, videos, bonusClaims, userFollows } from "@/db/schema";
 import { stripe } from "@/lib/stripe";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
@@ -15,14 +15,19 @@ export const xpRouter = createTRPCRouter({
         .query(async ({ input }) => {
             const { limit } = input;
 
+
             const topUsers = await db
                 .select({
                     id: users.id,
                     name: users.name,
+                    username: users.username,
                     imageUrl: users.imageUrl,
                     boostPoints: users.boostPoints,
+                    followers: count(userFollows.userId),
                 })
                 .from(users)
+                .leftJoin(userFollows, eq(users.id, userFollows.creatorId))
+                .groupBy(users.id)
                 .orderBy(desc(users.boostPoints))
                 .limit(limit);
 

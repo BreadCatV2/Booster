@@ -315,7 +315,7 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
 
                     {isEditing ? (
                         <div className="flex flex-col gap-2">
-                            <textarea
+                            <Textarea
                                 value={editedText}
                                 onChange={(e) => setEditedText(e.target.value)}
                                 className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-lg p-2 text-sm outline-none focus:border-amber-500 transition-colors resize-none"
