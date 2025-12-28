@@ -36,6 +36,12 @@ import { toast } from "sonner";
 import { trpc } from "@/trpc/client";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Default icons available to everyone (free)
 const DEFAULT_ICONS = [
@@ -429,19 +435,31 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                                     <div className="text-center mb-6">
                                         <div className="relative inline-block mx-auto mb-4">
                                             {/* User Avatar with actual profile picture */}
-                                            <UserAvatar
-                                                size="xl"
-                                                imageUrl={currentUser?.imageUrl || undefined}
-                                                name={displayName || currentUser?.name || "User"}
-                                                className="w-32 h-32 border-4 border-border"
-                                                userId={currentUser?.id || ''}
-                                            />
-                                            <button
+                                            <TooltipProvider delayDuration={200}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild >
+                                                        <div className="cursor-help">
+                                                            <UserAvatar
+                                                                size="xl"
+                                                                imageUrl={currentUser?.imageUrl || undefined}
+                                                                name={displayName || currentUser?.name || "User"}
+                                                                className="w-32 h-32 border-4 border-border"
+                                                                userId={currentUser?.id || ''}
+                                                            />
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>You can change your profile picture in Manage account (top right navbar)</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            {/* Deprecated */}
+                                            {/* <button
                                                 onClick={() => setShowAvatarModal(true)}
                                                 className="absolute bottom-1 right-1 bg-white dark:bg-gray-800 rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                                             >
                                                 <Camera className="w-4 h-4" />
-                                            </button>
+                                            </button> */}
                                         </div>
                                         <h2 className="text-2xl font-bold">{displayName || currentUser?.name || 'Loading...'}</h2>
                                         <p className="text-muted-foreground">
@@ -935,8 +953,8 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                 </div>
             )}
 
-            {/* Avatar Upload Sub-Modal */}
-            {showAvatarModal && (
+            {/* Avatar Upload Sub-Modal (deprecated)*/}
+            {/* {showAvatarModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
                     <div className="bg-card rounded-xl p-6 max-w-md w-full">
                         <div className="flex justify-between items-center mb-4">
@@ -963,7 +981,7 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
         </>
     );
 };
