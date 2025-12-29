@@ -51,7 +51,7 @@ export const VideoThumbnail = ({imageUrl,previewUrl, duration, title, aspectRati
             onMouseLeave={handleMouseLeave}
         >
             {/* thumbnail wrapper */}
-            <div className={`relative w-full rounded-2xl overflow-hidden ${
+            <div className={`relative w-full overflow-hidden ${
                 aspectRatio === "vertical" ? "aspect-[9/16]" : 
                 aspectRatio === "square" ? "aspect-square" : "aspect-video"
             }`}>
@@ -61,7 +61,7 @@ export const VideoThumbnail = ({imageUrl,previewUrl, duration, title, aspectRati
                 src={previewUrl ?? imageUrl ?? THUMBNAIL_FALLBACK} 
                 alt='thumbnail' 
                 fill 
-                className='size-full object-cover rounded-2xl'
+                className='size-full object-cover '
                 />
 
                 {/* Layer 2: Video (High Quality) */}
@@ -72,7 +72,7 @@ export const VideoThumbnail = ({imageUrl,previewUrl, duration, title, aspectRati
                         muted
                         loop
                         playsInline
-                        className={`absolute inset-0 size-full object-cover rounded-2xl transition-opacity duration-300 ${showVideo ? 'opacity-100' : 'opacity-0'}`}
+                        className={`absolute inset-0 size-full object-cover rounded-md transition-opacity duration-300 ${showVideo ? 'opacity-100' : 'opacity-0'}`}
                     />
                 )}
 
@@ -81,7 +81,7 @@ export const VideoThumbnail = ({imageUrl,previewUrl, duration, title, aspectRati
                 src={imageUrl ?? THUMBNAIL_FALLBACK} 
                 alt={title} 
                 fill 
-                className='size-full object-cover group-hover:opacity-0 rounded-2xl transition-opacity duration-300 z-10'
+                className='size-full object-cover group-hover:opacity-0  transition-opacity duration-300 z-10 border-red-500'
                 />
             </div>
 
@@ -95,7 +95,7 @@ export const VideoThumbnail = ({imageUrl,previewUrl, duration, title, aspectRati
             )}
                 
             {/* Duration box */}
-            <div className="absolute bottom-2 right-2 px-1 py-0.5 rounded bg-amber-700 text-white text-xs font-medium z-20">
+            <div className="absolute bottom-2 right-2 px-1 py-0.5 rounded-lg bg-amber-700 text-white text-xs font-medium z-20">
                 {formatDuration(duration)}
             </div>
         </div>

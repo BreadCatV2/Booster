@@ -188,6 +188,13 @@ export const videosRouter = createTRPCRouter({
         userId = user.id;
       }
 
+      const [currentVideo] = await db
+        .select({ categoryId: videos.categoryId })
+        .from(videos)
+        .where(eq(videos.id, videoId));
+
+      const currentCategoryId = currentVideo?.categoryId;
+
       const viewerFollow = db.$with("viewer_follow").as(
         db
           .select()
@@ -203,6 +210,18 @@ export const videosRouter = createTRPCRouter({
           .from(videoViews)
           .where(inArray(videoViews.userId, userId ? [userId] : []))
           .groupBy(videoViews.videoId)
+      );
+
+      const userCategoryAffinity = db.$with("user_category_affinity").as(
+        db
+          .select({
+            categoryId: videos.categoryId,
+            affinityScore: sum(videoViews.seen).as("affinityScore"),
+          })
+          .from(videoViews)
+          .innerJoin(videos, eq(videoViews.videoId, videos.id))
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videos.categoryId)
       );
 
       const ratingStats = db.$with("video_stats").as(
@@ -249,6 +268,8 @@ export const videosRouter = createTRPCRouter({
                             + (100 / LN(GREATEST(EXTRACT(EPOCH FROM (NOW() - ${videos.createdAt})) / 3600 + 2, 2)))
                             - (CASE WHEN ${viewerView.videoId} IS NOT NULL THEN 100 ELSE 0 END)
                             + (CASE WHEN ${viewerFollow.userId} IS NOT NULL THEN 50 ELSE 0 END)
+                            + (20 * LN(COALESCE(${userCategoryAffinity.affinityScore}, 0) + 1))
+                            + (CASE WHEN ${videos.categoryId} = ${currentCategoryId ?? null} THEN 50 ELSE 0 END)
                     `;
 
       const whereParts: any[] = [
@@ -270,10 +291,10 @@ export const videosRouter = createTRPCRouter({
             and(sql`${scoreExpr} = ${cursor.score}`, lt(videos.id, cursor.id))
           )
         );
+        whereParts.push(not(eq(videos.id, cursor.id)));
       }
-
       const rows = await db
-        .with(viewerFollow, ratingStats, videoViewsStats, viewerView)
+        .with(viewerFollow, ratingStats, videoViewsStats, viewerView, userCategoryAffinity)
         .select({
           ...getTableColumns(videos),
           user: {
@@ -308,8 +329,9 @@ export const videosRouter = createTRPCRouter({
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
         .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
         .leftJoin(viewerView, eq(viewerView.videoId, videos.id))
+        .leftJoin(userCategoryAffinity, eq(userCategoryAffinity.categoryId, videos.categoryId))
         .where(and(...whereParts))
-        .orderBy(desc(sql`score`))
+        .orderBy(desc(sql`score`), desc(videos.id))
         .limit(limit + 1);
 
       const hasMore = rows.length > limit;

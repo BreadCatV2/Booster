@@ -367,10 +367,10 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                                         transition={{ type: "spring", stiffness: 300 }}
                                         className="relative group/card cursor-pointer"
                                     >
-                                        <div className="relative rounded-2xl overflow-hidden border-2 border-transparent">
+                                        <div className="relative  overflow-hidden border-2 border-transparent">
                                             {(glowVisible || glowFading) && (
                                                 <div className={`absolute -inset-6 -z-10 pointer-events-none transition-opacity duration-300 ${glowFading ? 'opacity-0' : 'opacity-100'}`}>
-                                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400/60 via-yellow-300/40 to-transparent animate-pulse blur-[40px] opacity-95 transform scale-105" />
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400/60 via-yellow-300/40 to-transparent animate-pulse blur-[40px] opacity-95 transform scale-105" />
                                                 </div>
                                             )}
 
