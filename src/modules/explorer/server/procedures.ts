@@ -343,6 +343,30 @@ export const explorerRouter = createTRPCRouter({
           .where(inArray(userFollows.userId, userId ? [userId] : []))
       );
 
+      const viewerView = db.$with("viewer_view").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+          })
+          .from(videoViews)
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videoViews.videoId)
+      );
+
+      const userCategoryAffinity = db.$with("user_category_affinity").as(
+        db
+          .select({
+            categoryId: videos.categoryId,
+            affinityScore: sum(videoViews.seen).as("affinityScore"),
+          })
+          .from(videoViews)
+          .innerJoin(videos, eq(videoViews.videoId, videos.id))
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videos.categoryId)
+      );
+
+      // console.log("User Category Affinity SQL:", userCategoryAffinity.affinityScore);
+
       const ratingStats = db.$with("video_stats").as(
         db
           .select({
@@ -372,8 +396,9 @@ export const explorerRouter = createTRPCRouter({
         .groupBy(comments.videoId)
         .as("ca");
 
-      //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
+      // Score calculation with time decay, watch history, and following status
       const scoreExpr = sql<number>`
+                            (
                             LN(
                                 POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
                                 + COALESCE(${videoViewsStats.viewCount}, 0) 
@@ -382,6 +407,11 @@ export const explorerRouter = createTRPCRouter({
                                 + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
                                 + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
                             )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
+                            )
+                            + (100 / LN(GREATEST(EXTRACT(EPOCH FROM (NOW() - ${videos.createdAt})) / 3600 + 2, 2)))
+                            - (CASE WHEN ${viewerView.videoId} IS NOT NULL THEN 100 ELSE 0 END)
+                            + (CASE WHEN ${viewerFollow.userId} IS NOT NULL THEN 50 ELSE 0 END)
+                            + LN(COALESCE(${userCategoryAffinity.affinityScore}, 0) + 1) * 20
                     `;
 
       const whereParts: any[] = [
@@ -413,7 +443,7 @@ export const explorerRouter = createTRPCRouter({
       }
 
       const rows = await db
-        .with(viewerFollow, ratingStats, videoViewsStats)
+        .with(viewerFollow, ratingStats, videoViewsStats, viewerView,userCategoryAffinity)
         .select({
           ...getTableColumns(videos),
           user: {
@@ -434,16 +464,7 @@ export const explorerRouter = createTRPCRouter({
                 )
               : sql<number>`(NULL)`.mapWith(Number),
           },
-          score: sql<number>`
-                        LN(
-                            POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
-                            + COALESCE(${videoViewsStats.viewCount}, 0) 
-                            + TANH(COALESCE(${ratingStats.averageRating}, 0) - 3.5)
-                            * LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                            `.as("score"),
+          score: scoreExpr.as("score"),
 
           category: {
             ...getTableColumns(categories),
@@ -461,6 +482,8 @@ export const explorerRouter = createTRPCRouter({
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
         .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
         .leftJoin(categories, eq(videos.categoryId, categories.id))
+        .leftJoin(viewerView, eq(viewerView.videoId, videos.id))
+        .leftJoin(userCategoryAffinity, eq(userCategoryAffinity.categoryId, videos.categoryId))
         .where(and(...whereParts))
         .orderBy(desc(sql`score`), desc(videos.id))
         .limit(limit + 1);

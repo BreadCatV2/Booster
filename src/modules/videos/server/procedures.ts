@@ -195,6 +195,16 @@ export const videosRouter = createTRPCRouter({
           .where(inArray(userFollows.userId, userId ? [userId] : []))
       );
 
+      const viewerView = db.$with("viewer_view").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+          })
+          .from(videoViews)
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videoViews.videoId)
+      );
+
       const ratingStats = db.$with("video_stats").as(
         db
           .select({
@@ -226,6 +236,7 @@ export const videosRouter = createTRPCRouter({
 
       //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
       const scoreExpr = sql<number>`
+                            (
                             LN(
                                 POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
                                 + COALESCE(${videoViewsStats.viewCount}, 0) 
@@ -234,6 +245,10 @@ export const videosRouter = createTRPCRouter({
                                 + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
                                 + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
                             )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
+                            )
+                            + (100 / LN(GREATEST(EXTRACT(EPOCH FROM (NOW() - ${videos.createdAt})) / 3600 + 2, 2)))
+                            - (CASE WHEN ${viewerView.videoId} IS NOT NULL THEN 100 ELSE 0 END)
+                            + (CASE WHEN ${viewerFollow.userId} IS NOT NULL THEN 50 ELSE 0 END)
                     `;
 
       const whereParts: any[] = [
@@ -258,7 +273,7 @@ export const videosRouter = createTRPCRouter({
       }
 
       const rows = await db
-        .with(viewerFollow, ratingStats, videoViewsStats)
+        .with(viewerFollow, ratingStats, videoViewsStats, viewerView)
         .select({
           ...getTableColumns(videos),
           user: {
@@ -279,16 +294,7 @@ export const videosRouter = createTRPCRouter({
                 )
               : sql<number>`(NULL)`.mapWith(Number),
           },
-          score: sql<number>`
-                        LN(
-                            POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
-                            + COALESCE(${videoViewsStats.viewCount}, 0) 
-                            + TANH(COALESCE(${ratingStats.averageRating}, 0) - 3.5)
-                            * LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                            `.as("score"),
+          score: scoreExpr.as("score"),
 
           videoRatings: ratingStats.ratingCount,
           averageRating: ratingStats.averageRating,
@@ -301,6 +307,7 @@ export const videosRouter = createTRPCRouter({
         .leftJoin(ratingStats, eq(ratingStats.videoId, videos.id))
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
         .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
+        .leftJoin(viewerView, eq(viewerView.videoId, videos.id))
         .where(and(...whereParts))
         .orderBy(desc(sql`score`))
         .limit(limit + 1);

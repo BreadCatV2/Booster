@@ -1,11 +1,12 @@
 'use client';
 
-import { Boxes, CircleDollarSignIcon, Copyright, CpuIcon, Headset, Megaphone, UsersRound } from 'lucide-react';
+import { Boxes, CircleDollarSignIcon, Code, Copyright, CpuIcon, Github, Headset, Megaphone, Sparkles, UsersRound } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
 
 import 'katex/dist/katex.min.css';
 import { BlockMath } from "react-katex";
+import { motion } from 'framer-motion';
 
 
 export const About = () => {
@@ -95,14 +96,19 @@ export const About = () => {
     const formula = String.raw`
 
 \begin{aligned}
-score(x) &= ln\Bigg(
-  \Big(\frac{\sqrt{1000 \cdot boostPoints}}{1000} + 1\Big)^{2}
-  + videoViews \\
-&\quad + \tanh(averageRating - 3.5) \cdot ln(\max(ratings, 1)) \\
-&\quad + ln(\max(ratings, 1))
-  + \ln(\max(comments, 1))
-  + \frac{\sqrt{1000 \cdot boostPoints}}{1000}
-\Bigg)
+score(x) &= \ln\Bigg(
+  \Big(\frac{\sqrt{1000 \cdot x.creator.boostPoints}}{1000} + 1\Big)^{2}
+  + x.views \\
+&\quad + \tanh(x.averageRating - 3.5) \cdot \ln(\max(x.ratings, 1)) \\
+&\quad + \ln(\max(x.ratings, 1))
+  + \ln(\max(x.comments, 1))
+  + \frac{\sqrt{1000 \cdot x.creator.boostPoints}}{1000}
+\Bigg) \\
+&\quad + \frac{100}{\ln(\text{hoursSinceUpload}(x.createdAt) + 2)} \\
+&\quad - 100 \cdot \mathbb{I}(x.watched) \\
+&\quad + 50 \cdot \mathbb{I}(\text{following} \  x.creator) \\
+&\quad + 20 \cdot \ln(\textstyle \sum (categoryViews \  \text{    where view }\  = x.category) + 1) \\
+&\quad \Big(  + 50 \cdot \mathbb{I}(\text{sameCategory as current video being watched}) \Big) \rightarrow \text{Only in the /videos page, not in explorer}
 \end{aligned}
 
 `.trim();
@@ -332,9 +338,61 @@ score(x) &= ln\Bigg(
 
                 </div>
 
+                {/* Community Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="relative mb-12"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#ffca55]/5 via-transparent to-[#ffa100]/5 rounded-3xl" />
+
+                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm ">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                            <div className="flex-1">
+                                <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-[#ffca55] to-[#ffa100] bg-clip-text text-transparent">
+                                    Join Our Open Source Community
+                                </h3>
+                                <p className="text-muted-foreground mb-6">
+                                    We're building the future of video sharing together. Contribute to our GitHub repository or join our Discord community to help shape Booster.
+                                </p>
+                                <div className="flex items-center gap-4">
+                                    <motion.a
+                                        whileTap={{ scale: 0.75 }}
+                                        href="https://github.com/SamC4r/Booster"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 px-6 py-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-300 cursor-pointer"
+                                    >
+                                        <Github className="size-5" />
+                                        <span className="font-semibold">Star on GitHub</span>
+                                    </motion.a>
+
+                                    <motion.a
+                                        whileTap={{ scale: 0.75 }}
+                                        href="https://discord.com/invite/5KaSRdxFXw"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#5865F2]/50 hover:bg-[#5865F2]/70 text-white transition-all duration-300 cursor-pointer"
+                                    >
+                                        <svg className="size-5" fill="currentColor" viewBox="0 0 127.14 96.36">
+                                            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                                        </svg>
+                                        <span className="font-semibold">Join Discord</span>
+                                    </motion.a>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#ffca55] to-[#ffa100] blur-2xl opacity-20 rounded-full" />
+                                <Code className="size-24 text-[#ffca55] relative z-10" />
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
                 <footer className="flex text-center gap-2 justify-center items-center mt-16 py-8 border-t border-gray-700">
                     <Copyright className='size-4' />
-                    <p className="text-gray-400"> 2025 Booster. All rights reserved.</p>
+                    <p className="text-gray-400"> 2025 Booster. Samuel Caraballo Chichiraldi & Maximo Caraballo Chichiraldi.</p>
                 </footer>
             </div>
         </div >
