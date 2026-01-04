@@ -39,7 +39,6 @@ export const UserInfo = ({
     userId,
 }: UserInfoProps) => {
 
-    console.log("Size in UserInfo:", size);
 
     return (
         <div className={cn(userInfoVariants({ size, className }))}>

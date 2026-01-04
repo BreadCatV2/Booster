@@ -21,7 +21,7 @@ export const VideoDescription = ({
 
   return (
     <div
-      className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-[#333333] dark:to-[#333333] rounded-2xl p-5 cursor-pointer 
+      className="video-description-card bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-[#333333] dark:to-[#333333] rounded-2xl p-5 cursor-pointer 
                     shadow-lg hover:shadow-xl transition-all duration-300
                  "
       onClick={() => setIsExpanded((current) => !current)}

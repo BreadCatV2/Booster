@@ -270,7 +270,7 @@ export const Comment = ({ parentComment, videoId, viewer, depth, maxDepth }: Com
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="group relative p-2 ml-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            className="group comment-item relative p-2 ml-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
         >
             <div className="flex gap-3">
                 <UserAvatar size="md" imageUrl={parentComment.user.imageUrl} name={parentComment.user.name} userId={parentComment.userId} badgeSize={5} />

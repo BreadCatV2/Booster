@@ -67,7 +67,6 @@ export const UserIcon = ({ userId, size, className }: UserIconProps) => {
         return null;
     }
 
-    console.log("Size in UserIcon:", size);
 
     return (
         <TooltipProvider delayDuration={0}>

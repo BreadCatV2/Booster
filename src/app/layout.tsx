@@ -103,8 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                                         "@type": "SearchAction",
                                         "target": `${SITE_URL}/search?q={search_term_string}`,
                                         "query-input": "required name=search_term_string"
-                                    }
-                                },
+                            }                              },
                                 {
                                     "@context": "https://schema.org",
                                     "@type": "Organization",
@@ -121,7 +120,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     />
                 </head>
                 <body className={`${montserrat.className} antialiased bg-background text-foreground`}>
-                    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+                    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange themes={['light', 'dark', 'retro']}>
                         <TRPCProvider>
                             <NotificationProvider>
                                 <UnreadTitleUpdater />

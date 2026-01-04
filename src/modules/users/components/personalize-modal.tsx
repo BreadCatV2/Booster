@@ -29,7 +29,8 @@ import {
     Globe,
     FileText,
     Music,
-    Gamepad2
+    Gamepad2,
+    Monitor
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -802,7 +803,7 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                                         <div className="space-y-4">
                                             <div>
                                                 <h3 className="text-lg font-bold mb-3">Theme</h3>
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-3 gap-4">
                                                     {/* Light Theme */}
                                                     <button 
                                                         onClick={() => setTheme('light')} 
@@ -874,6 +875,43 @@ export const PersonalizeModal = ({ isOpen, onClose }: PersonalizeModalProps) => 
                                                             <div className="h-1 flex-1 bg-gray-700 rounded-full"></div>
                                                             <div className="h-1 flex-1 bg-gray-600 rounded-full"></div>
                                                             <div className="h-1 flex-1 bg-gray-500 rounded-full"></div>
+                                                        </div>
+                                                    </button>
+
+                                                    {/* Retro Theme */}
+                                                    <button 
+                                                        onClick={() => setTheme('retro')} 
+                                                        className={cn(
+                                                            "relative border-2 rounded-xl p-4 transition-all group hover:scale-105",
+                                                            theme === 'retro' 
+                                                                ? "bg-gradient-to-br from-gray-200 to-gray-300 shadow-lg" 
+                                                                : "border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800/50"
+                                                        )}
+                                                        style={theme === 'retro' ? { borderColor: currentAccent.bgSolid } : {}}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="p-2 bg-gray-300 rounded-lg border border-gray-400 shadow-inner">
+                                                                <Monitor className="w-6 h-6 text-gray-700" />
+                                                            </div>
+                                                            <div className="text-left flex-1">
+                                                                <div className="font-bold text-gray-800 dark:text-gray-200">Retro Mode</div>
+                                                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">2009 Internet Style</div>
+                                                            </div>
+                                                        </div>
+                                                        {/* Selection indicator */}
+                                                        {theme === 'retro' && (
+                                                            <div 
+                                                                className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                                                                style={{ background: currentAccent.bgSolid }}
+                                                            >
+                                                                <Check className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                        {/* Preview bars */}
+                                                        <div className="mt-3 flex gap-1">
+                                                            <div className="h-1 flex-1 bg-blue-600 rounded-none border border-gray-500"></div>
+                                                            <div className="h-1 flex-1 bg-gray-300 rounded-none border border-gray-500"></div>
+                                                            <div className="h-1 flex-1 bg-gray-200 rounded-none border border-gray-500"></div>
                                                         </div>
                                                     </button>
                                                 </div>

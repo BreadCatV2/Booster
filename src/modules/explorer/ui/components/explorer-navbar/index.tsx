@@ -8,6 +8,8 @@ import { SearchInput } from "./search-input";
 import { AuthButton } from "@/modules/auth/ui/components/auth-button";
 
 import { Tv2Icon,  Video, Upload } from "lucide-react";
+import { User as RetroUser, FileTransfer as RetroUpload } from "@react95/icons";
+import { useTheme } from "next-themes";
 import { trpc } from "@/trpc/client";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator";
@@ -32,7 +34,7 @@ const NavItem = ({
     return (
       <button
         onClick={() => clerk.openSignIn()}
-        className="px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        className="px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors nav-item-button"
       >
         {children}
       </button>
@@ -41,7 +43,7 @@ const NavItem = ({
     return (
       <Link
         href={href}
-        className="px-2 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        className="px-2 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors nav-item-button"
       >
         {children}
       </Link>
@@ -50,7 +52,12 @@ const NavItem = ({
 };
 
 export const ExplorerNavBar = () => {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -102,7 +109,7 @@ export const ExplorerNavBar = () => {
           <SidebarTrigger />
           <Link
             href="/"
-            className="flex items-center p-2 rounded-md hover:bg-muted transition-colors"
+            className="flex items-center p-2 rounded-md hover:bg-muted transition-colors nav-logo-link"
           >
             <div className="flex items-center">
               {/*<Image
@@ -117,7 +124,7 @@ export const ExplorerNavBar = () => {
                 alt="Booster"
                 width={150}
                 height={30}
-                className="hidden sm:block"
+                className="hidden sm:block no-border"
               />
             </div>
           </Link>
@@ -134,14 +141,14 @@ export const ExplorerNavBar = () => {
 
           <NavItem clerk={clerk} userId={userId} href={`/users/${userId}`}>
             <div className="flex items-center gap-2">
-              <Tv2Icon className="size-4" />
+              {mounted && theme === 'retro' ? <RetroUser variant="32x32_4" /> : <Tv2Icon className="size-4" />}
               <span className="hidden sm:block">My Channel</span>
             </div>
           </NavItem>
 
           <NavItem clerk={clerk} userId={userId} href="/studio?create=true">
             <div className="flex items-center gap-2">
-              <Upload className="size-4" />
+              {mounted && theme === 'retro' ? <RetroUpload width={32} height={32} /> : <Upload className="size-4" />}
               <span className="hidden sm:block">Create</span>
             </div>
           </NavItem>

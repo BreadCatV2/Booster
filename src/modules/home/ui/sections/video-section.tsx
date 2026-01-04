@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Eye, Play, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 ;
 import { useAuth } from '@clerk/nextjs';
+import { useTheme } from 'next-themes';
 
 import { trpc } from '@/trpc/client';
 import { VideoReactions } from '@/modules/videos/ui/components/video-reactions';
@@ -122,6 +123,7 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
     const hasViewedRef = useRef(false); // Synchronous ref to prevent race conditions
     const durationRef = useRef(0);
     const videoPlayerRef = useRef<{ play: () => void; pause: () => void }>(null);
+    const { theme } = useTheme();
 
     const utils = trpc.useUtils();
 
@@ -312,6 +314,7 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
                         libraryId={video.bunnyLibraryId}
                         videoId={video.bunnyVideoId}
                         autoplay
+                        theme={theme}
                         onTimeUpdate={handleTimeUpdate}
                     />
 

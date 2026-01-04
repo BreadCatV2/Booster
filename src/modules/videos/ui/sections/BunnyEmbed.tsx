@@ -18,6 +18,7 @@ export function BunnyEmbed({
     onVideoPlay,
     onVideoPause,
     onTimeUpdate,
+    theme,
 }: {
     libraryId: string | null;
     videoId: string | null;
@@ -29,6 +30,7 @@ export function BunnyEmbed({
     onVideoPlay?: () => void;
     onVideoPause?: () => void;
     onTimeUpdate?: (data: { seconds: number, duration: number, percent: number }) => void;
+    theme?: string;
 }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const playerRef = useRef<any>(null);
@@ -53,6 +55,12 @@ export function BunnyEmbed({
     if (token && expires) {
         params.set("token", token);
         params.set("expires", String(expires));
+    }
+
+    if (theme === 'retro') {
+        params.set("theme", 'retro');
+    } else {
+        params.set("theme", 'default');
     }
 
     params.set('loading', 'lazy');
@@ -150,7 +158,7 @@ export function BunnyEmbed({
                 }
             }
         };
-    }, [libraryId, videoId, autoplay, muted]);
+    }, [libraryId, videoId, autoplay, muted, theme, token, expires]);
 
     // // Methods to control the player
     // const play = () => {

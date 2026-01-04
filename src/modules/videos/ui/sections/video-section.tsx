@@ -12,6 +12,7 @@ import { Play, Eye, Clock, Loader2, Sparkles } from "lucide-react";
 import { BunnyEmbed } from "./BunnyEmbed";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { useTheme } from "next-themes";
 // import Player from "./Player";
 
 interface VideoSectionProps {
@@ -74,6 +75,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     const hasViewedRef = useRef(false); // Synchronous ref to prevent race conditions
     const durationRef = useRef(0);
     const utils = trpc.useUtils();
+    const { theme } = useTheme();
 
     // Add XP reward mutation for featured videos
     // const { mutate: rewardXp } = trpc.xp.rewardXp.useMutation({
@@ -234,6 +236,7 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                     <BunnyEmbed
                         libraryId={video.bunnyLibraryId}
                         videoId={video.bunnyVideoId}
+                        theme={theme}
                         onTimeUpdate={handleTimeUpdate}
                     />
                     {/*<Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />*/}

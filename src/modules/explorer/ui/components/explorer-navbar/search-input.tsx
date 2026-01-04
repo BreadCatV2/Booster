@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { SearchIcon, Stars, XIcon, ArrowLeft } from "lucide-react";
+import { FileFind, Star, Close, ArrowLeft as RetroArrowLeft } from "@react95/icons";
+import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SearchInputProps {
   isMobileSearchOpen?: boolean;
@@ -14,6 +16,12 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
   const [value, setValue] = useState("");
   const [isStarMode, setIsStarMode] = useState(false);
   const router = useRouter();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleMobileSearchClick = () => {
     setIsStarMode(false);
@@ -72,10 +80,10 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
         {!isMobileSearchOpen && (
             <>
                 <button onClick={handleMobileSearchClick} className="p-2 hover:bg-muted rounded-full transition-colors">
-                    <SearchIcon className="size-5" />
+                    {mounted && theme === 'retro' ? <FileFind variant="16x16_4" /> : <SearchIcon className="size-5" />}
                 </button>
                 <button onClick={handleMobileAiClick} className="p-2 hover:bg-muted rounded-full transition-colors">
-                     <Stars className="size-5 text-primary" />
+                     {mounted && theme === 'retro' ? <Star variant="16x16_4" /> : <Stars className="size-5 text-primary" />}
                 </button>
             </>
         )}
@@ -88,7 +96,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
         {/* Back button for mobile */}
         {isMobileSearchOpen && (
             <button type="button" onClick={() => setIsMobileSearchOpen?.(false)} className="mr-2 sm:hidden p-2 hover:bg-muted rounded-full transition-colors">
-                <ArrowLeft className="size-5" />
+                {mounted && theme === 'retro' ? <RetroArrowLeft width={16} height={16} /> : <ArrowLeft className="size-5" />}
             </button>
         )}
 
@@ -143,7 +151,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
                 className="px-4 rounded-r-full flex text-gray-500 items-center justify-center focus:outline-none transition-colors duration-200 hover:bg-muted/50"
                 onSubmit={handleAiSearch}
               >
-                <SearchIcon className="size-5" />
+                {mounted && theme === 'retro' ? <FileFind variant="16x16_4" /> : <SearchIcon className="size-5" />}
               </button>
             </div>
 
@@ -158,7 +166,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
                 type="submit"
                 className="px-4 rounded-r-full flex text-gray-500 items-center justify-center focus:outline-none transition-colors duration-200 hover:bg-muted/50"
               >
-                <Stars className="size-4 text-primary" />
+                {mounted && theme === 'retro' ? <Star variant="16x16_4" /> : <Stars className="size-4 text-primary" />}
               </button>
             </div>
 
@@ -175,7 +183,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
               >
                 <div className="relative p-1.5 group rounded-full transition-all duration-300 bg-background hover:cursor-pointer ring-2 ring-gray-700">
                   <div className="z-50 p-1 relative bg-clip-text text-transparent group-hover:brightness-110 transition-all duration-100">
-                    <SearchIcon className="size-4 text-primary" />
+                    {mounted && theme === 'retro' ? <FileFind variant="16x16_4" /> : <SearchIcon className="size-4 text-primary" />}
                   </div>
                 </div>
               </button>
@@ -191,7 +199,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
               onClick={() => setValue("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full size-7 hover:bg-muted transition-all duration-500 ease-in-out"
             >
-              <XIcon className="text-muted-foreground size-4 hover:text-foreground transition-colors" />
+              {mounted && theme === 'retro' ? <Close variant="16x16_4" /> : <XIcon className="text-muted-foreground size-4 hover:text-foreground transition-colors" />}
             </Button>
           )}
         </div>
@@ -210,7 +218,7 @@ export const SearchInput = ({ isMobileSearchOpen, setIsMobileSearchOpen }: Searc
 
             {/* Icon with Gradient Fill */}
             <div className="z-50 p-1 relative bg-clip-text text-transparent group-hover:brightness-110 transition-all duration-300 bg-gradient-to-r from-primary to-secondary">
-              <Stars className="size-4 text-black font-bold" />
+              {mounted && theme === 'retro' ? <Star variant="16x16_4" /> : <Stars className="size-4 text-black font-bold" />}
             </div>
           </div>
         )}

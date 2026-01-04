@@ -59,6 +59,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BunnyEmbed } from "@/modules/videos/ui/sections/BunnyEmbed";
+import { useTheme } from "next-themes";
 // import { VTTGenerator } from "../components/chapters";
 // import { Checkbox } from "@radix-ui/react-checkbox";
 
@@ -180,6 +181,7 @@ const FormErrorFallback = () => {
 const FormSectionSuspense = ({ videoId }: PageProps) => {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const { theme } = useTheme();
 
   const [video] = trpc.studio.getOne.useSuspenseQuery(
     { id: videoId },
@@ -331,15 +333,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                     <FormItem>
                       <FormLabel className="text-base font-medium text-gray-800 dark:text-white flex items-center justify-between">
                         Title
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-                        >
-                          <SparklesIcon className="h-3.5 w-3.5 mr-1" />
-                          AI Generate
-                        </Button>
+                        
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -363,15 +357,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                     <FormItem>
                       <FormLabel className="text-base font-medium text-gray-800 dark:text-white flex items-center justify-between">
                         Description
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-                        >
-                          <SparklesIcon className="h-3.5 w-3.5 mr-1" />
-                          AI Generate
-                        </Button>
+                       
                       </FormLabel>
                       <FormControl>
                         <Textarea
@@ -678,6 +664,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                     key={video.bunnyStatus}
                     libraryId={video.bunnyLibraryId}
                     videoId={video.bunnyVideoId}
+                    theme={theme}
                   />
                   {/* Overlay for processing state */}
                   {(video.bunnyStatus === 'processing' || video.bunnyStatus === 'encoding' || video.bunnyStatus === 'queued') && (
