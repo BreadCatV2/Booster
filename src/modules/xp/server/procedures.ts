@@ -418,48 +418,49 @@ export const xpRouter = createTRPCRouter({
 
             return boosters;
         }),
+        
+    //vulnerable code -> unlimited xp farming    
+    // rewardXp: protectedProcedure
+    //     .input(z.object({
+    //         amount: z.number(),
+    //         videoId: z.string().uuid(),
+    //     }))
+    //     .mutation(async ({ ctx, input }) => {
+    //         try {
+    //             const { id: userId } = ctx.user;
+    //             const { amount, videoId } = input;
 
-    rewardXp: protectedProcedure
-        .input(z.object({
-            amount: z.number(),
-            videoId: z.string().uuid(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            try {
-                const { id: userId } = ctx.user;
-                const { amount, videoId } = input;
+    //             console.log(`Attempting to reward XP: User ${userId}, Amount ${amount}, Video ${videoId}`);
 
-                console.log(`Attempting to reward XP: User ${userId}, Amount ${amount}, Video ${videoId}`);
+    //             // Update user XP (handle null XP values)
+    //             const updateResult = await db.update(users)
+    //                 .set({
+    //                     xp: sql<number>`COALESCE(${users.xp}, 0) + ${amount}`,
+    //                 })
+    //                 .where(eq(users.id, userId))
+    //                 .returning({ newXp: users.xp });
 
-                // Update user XP (handle null XP values)
-                const updateResult = await db.update(users)
-                    .set({
-                        xp: sql<number>`COALESCE(${users.xp}, 0) + ${amount}`,
-                    })
-                    .where(eq(users.id, userId))
-                    .returning({ newXp: users.xp });
+    //             if (!updateResult[0]) {
+    //                 throw new TRPCError({
+    //                     code: 'INTERNAL_SERVER_ERROR',
+    //                     message: 'Failed to update user XP',
+    //                 });
+    //             }
 
-                if (!updateResult[0]) {
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Failed to update user XP',
-                    });
-                }
-
-                console.log(`XP reward granted successfully: User ${userId} received ${amount} XP for video ${videoId}. New XP: ${updateResult[0].newXp}`);
-                return { 
-                    success: true, 
-                    xpAdded: amount, 
-                    newTotal: updateResult[0].newXp 
-                };
-            } catch (error) {
-                console.error('Error rewarding XP:', error);
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'Failed to reward XP',
-                });
-            }
-        }),
+    //             console.log(`XP reward granted successfully: User ${userId} received ${amount} XP for video ${videoId}. New XP: ${updateResult[0].newXp}`);
+    //             return { 
+    //                 success: true, 
+    //                 xpAdded: amount, 
+    //                 newTotal: updateResult[0].newXp 
+    //             };
+    //         } catch (error) {
+    //             console.error('Error rewarding XP:', error);
+    //             throw new TRPCError({
+    //                 code: 'INTERNAL_SERVER_ERROR',
+    //                 message: 'Failed to reward XP',
+    //             });
+    //         }
+    //     }),
 
     buyXp: protectedProcedure
         .input(z.object({
