@@ -84,6 +84,9 @@ export const MarketSectionSuspense = () => {
     onSuccess: (data) => {
       utils.users.getByClerkId.setData({ clerkId: clerkUserId }, data as any);
       utils.users.getByClerkId.invalidate({ clerkId: clerkUserId });
+    },
+    onError: (error) => {
+      console.error("Error toggling rewarded ads:", error);
     }
   });
 

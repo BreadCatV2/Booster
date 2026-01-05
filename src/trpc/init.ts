@@ -58,6 +58,8 @@ export const protectedProcedure = t.procedure.use(async function isAuthed(opts){
 
   let [user] = await db.select().from(users).where(eq(users.clerkId,ctx.clerkUserId)).limit(1);
 
+  console.log("protectedProcedure user:", user);
+
   if (!user) {
     // Fallback: Sync user from Clerk if not found in DB (e.g. webhook failed)
     try {
