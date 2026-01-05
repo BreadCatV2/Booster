@@ -1,8 +1,10 @@
  import { db } from "@/db";
-import { videos, videoViews } from "@/db/schema";
+import { users, videos, videoViews } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { and, eq, sql } from "drizzle-orm";
 import z from "zod";
+import { updateVideoScore } from "@/modules/videos/server/utils";
+
 
 
 export const videoViewsRouter = createTRPCRouter({
@@ -25,7 +27,8 @@ export const videoViewsRouter = createTRPCRouter({
 
         return views;
     }),
-    
+
+
     //TODO: check for RCE
     create: protectedProcedure
     .input(z.object({videoId:z.string().uuid()}))
@@ -39,6 +42,7 @@ export const videoViewsRouter = createTRPCRouter({
             .onConflictDoNothing()
             .returning()
 
+
         if(!createdVideoView){
             const [existingVideoView] = await db
                 .select().from(videoViews)
@@ -51,11 +55,15 @@ export const videoViewsRouter = createTRPCRouter({
 
                 const now = new Date();
                 const last_update = new Date(existingVideoView.updatedAt);
-                const RATE_LIMIT_VIEWS_TIME = 1 * 60 * 60 * 1000; // 12 hours in ms 
+                const RATE_LIMIT_VIEWS_TIME = 12 * 60 * 60 * 1000; // 12 hour in ms 
 
                 if (now.getTime() - last_update.getTime() < RATE_LIMIT_VIEWS_TIME) {
                     console.log("rate limited")
-                    return existingVideoView;
+                    return {
+                        ...existingVideoView,
+                        xpEarned: 0,
+                        message: "You've already watched this video recently."
+                    };
                 } else {
                     const [updatedVideoViews] = await db
                         .update(videoViews)
@@ -68,11 +76,47 @@ export const videoViewsRouter = createTRPCRouter({
                                 eq(videoViews.userId, existingVideoView.userId)
                             ))
                         .returning()
-                    return updatedVideoViews;
+                    
+                    // Update video view count and score
+                    // const [updatedVideo] = await db.update(videos)
+                    //     .set({ viewCount: sql`${videos.viewCount} + 1` })
+                    //     .where(eq(videos.id, videoId))
+                    //     .returning({ isFeatured: videos.isFeatured });
+                    //
+                    // await updateVideoScore(videoId);
+                    //
+                    // let result = { xpEarned: 0, message: undefined as string | undefined };
+                    // if (updatedVideo?.isFeatured) {
+                    //     result = await awardXpForView(userId);
+                    // }
+
+                    return {
+                        ...updatedVideoViews,
+                        // xpEarned: result.xpEarned,
+                        // message: result.message
+                    };
                 }
                 // return existingVideoView;
             }
         }
-      return createdVideoView
+        
+        // Update video view count and score
+        // const [updatedVideo] = await db.update(videos)
+        //     .set({ viewCount: sql`${videos.viewCount} + 1` })
+        //     .where(eq(videos.id, videoId))
+        //     .returning({ isFeatured: videos.isFeatured });
+        //
+        // await updateVideoScore(videoId);
+        //
+        // let result = { xpEarned: 0, message: undefined as string | undefined };
+        // if (updatedVideo?.isFeatured) {
+        //     result = await awardXpForView(userId);
+        // }
+
+      return {
+        ...createdVideoView,
+        // xpEarned: result.xpEarned,
+        // message: result.message
+      }
     })
 })

@@ -18,7 +18,7 @@ import Link from "next/link";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
 import {  snakeCaseToTitle } from "@/lib/utils";
 import { format } from "date-fns";
-import { Globe2Icon, LockIcon, Eye, MessageCircle,   Calendar, Filter, Star } from "lucide-react";
+import { Globe2Icon, LockIcon, Eye, EyeOff, MessageCircle,   Calendar, Filter, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const VideosSection = () => {
@@ -154,7 +154,13 @@ export const VideosSectionSuspense = () => {
                           title={video.title} 
                           imageUrl={video.thumbnailUrl}
                           previewUrl={video.previewUrl} 
+                          isAi={video.isAi}
                         />
+                        {video.visibility === 'private' && (
+                          <div className="absolute top-1 left-1 bg-black/60 rounded-md p-1">
+                            <EyeOff className="size-3 text-white" />
+                          </div>
+                        )}
                         {/* <div className="absolute bottom-1 right-1 bg-background/90 px-1.5 py-0.5 rounded text-xs font-medium">
                           {formatDuration(video.duration)}
                         </div> */}

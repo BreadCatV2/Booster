@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, uniqueIndex, integer, pgEnum, primaryKey, AnyPgColumn, boolean, index, vector } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, uniqueIndex, integer, pgEnum, primaryKey, AnyPgColumn, boolean, index, vector, real, bigint } from "drizzle-orm/pg-core";
 
 import {
     createInsertSchema,
@@ -6,19 +6,46 @@ import {
     createUpdateSchema
 } from "drizzle-zod"
 
+export const userAccountType = pgEnum("user_account_type", [
+    'personal',
+    'business'
+])
+
 export const users = pgTable("users", {
     id: uuid("id").primaryKey().defaultRandom(),
     clerkId: text("clerk_id").unique().notNull(),
     name: text().notNull(),
+    username: text("username"),
     imageUrl: text("image_url").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     about: text("about"),
+    instagram: text("instagram"),
+    twitter: text("twitter"),
+    youtube: text("youtube"),
+    tiktok: text("tiktok"),
+    discord: text("discord"),
+    website: text("website"),
     xp: integer("xp").default(0), // THis is the virtual currency to trade and boost a channel
-    boostPoints: integer("boost_points").default(0), // to measure the amount of boost given to the channel (amount of XP given to the channel). Can only be done with xp
+    boostPoints: bigint("boost_points", { mode: "number" }).default(0), // to measure the amount of boost given to the channel (amount of XP given to the channel). Can only be done with xp
     // level: integer("level").default(1),
     newLevelUpgrade: timestamp("new_level_at"),
     equippedAssetId: uuid("equipped_asset_id").references((): AnyPgColumn => assets.assetId), // The currently equipped/displayed asset icon
+    equippedTitleId: uuid("equipped_title_id").references((): AnyPgColumn => assets.assetId), // The currently equipped title
+    rewardedAdsEnabled: boolean("rewarded_ads_enabled").default(false),
+    verticalVideosEnabled: boolean("vertical_videos_enabled").default(true),
+    aiContentEnabled: boolean("ai_content_enabled").default(true),
+    accountType: userAccountType("account_type"),
+    businessDescription: text("business_description"),
+    businessImageUrls: text("business_image_urls").array(),
+    dailyWatchCount: integer("daily_watch_count").default(0).notNull(),
+    lastDailyXpReset: timestamp("last_daily_xp_reset").defaultNow().notNull(),
+
+    // YouTube Sync
+    youtubeAccessToken: text("youtube_access_token"),
+    youtubeRefreshToken: text("youtube_refresh_token"),
+    youtubeTokenExpiry: timestamp("youtube_token_expiry"),
+    youtubeChannelId: text("youtube_channel_id"),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
 
 //create index on clerk_id to query faster. --> speed up WHERE, JOIN, ORDER BY clauses. B-Tree sorted by the column I index
@@ -36,6 +63,50 @@ export const categories = pgTable("categories", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("name_idx").on(t.name)])
+
+export const communities = pgTable("communities", {
+    communityId: uuid("id").primaryKey().defaultRandom(),
+    name: text().notNull().unique(),
+    description_short: text(),
+    description_long: text(),
+    banner_url: text("banner_url"),
+    icon_url: text("icon_url"),
+    rules: text("rules"),
+    isPrivate: boolean("is_private").default(false).notNull(),
+    allowUserPosts: boolean("allow_user_posts").default(true).notNull(),
+    categoryId: uuid("category_id").references(() => categories.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+    uniqueIndex("community_name_idx").on(t.name),
+    index("community_category_idx").on(t.categoryId)
+]
+)
+
+export const updateCommunitySchema = createUpdateSchema(communities);
+
+
+
+export const communityMembers = pgTable("community_members", {
+    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    role: text("role").default("member").notNull(), // member, moderator, admin
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.communityId, t.userId] }),
+    index("community_members_user_idx").on(t.userId),
+    index("community_members_community_idx").on(t.communityId)
+]);
+
+export const communityModerators = pgTable("community_moderators", {
+    communityId: uuid("community_id").references(() => communities.communityId, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.communityId, t.userId] }),
+    index("community_moderators_user_idx").on(t.userId),
+    index("community_moderators_community_idx").on(t.communityId)
+]);
 
 export const videoVisibility = pgEnum("video_visibility", [
     'private',
@@ -73,9 +144,14 @@ export const videos = pgTable("videos", {
     bunnyStatus: text("bunny_status"),                    
     bunnyDuration: integer("bunny_duration"),             
 
+    width: integer("width"),
+    height: integer("height"),
+
     duration: integer("duration").default(0).notNull(),
     visibility: videoVisibility('visibility').default('private').notNull(),
     status: videoStatus().default('processing').notNull(),
+
+    youtubeVideoId: text("youtube_video_id").unique(),
 
     userId: uuid("user_id").references(() => users.id, {
         onDelete: 'cascade',
@@ -83,6 +159,10 @@ export const videos = pgTable("videos", {
     }).notNull(),
 
     categoryId: uuid("category_id").references(() => categories.id, {
+        onDelete: 'set null',
+    }),
+
+    communityId: uuid("community_id").references(() => communities.communityId, {
         onDelete: 'set null',
     }),
 
@@ -95,17 +175,54 @@ export const videos = pgTable("videos", {
 
     isAi: boolean("is_ai").notNull().default(false),
     embedding: vector("embedding", { dimensions: 1536 } ), // OpenAI text-embedding-ada-002 dimension is 1536
+    tags: text("tags").array(),
+
+    commentCount: integer("comment_count").default(0).notNull(),
+    ratingCount: integer("rating_count").default(0).notNull(),
+    averageRating: real("average_rating").default(0).notNull(),
+    trendingScore: integer("trending_score").default(0).notNull(),
 }, (t) => [
     index("videos_user_idx").on(t.userId),
     index("videos_category_idx").on(t.categoryId),
     index("videos_visibility_status_idx").on(t.visibility, t.status),
     index("videos_created_at_idx").on(t.createdAt),
     index("videos_featured_idx").on(t.isFeatured),
+    index("videos_trending_idx").on(t.trendingScore),
 ])
 
 export const videoInsertSchema = createInsertSchema(videos);
 export const videoUpdateSchema = createUpdateSchema(videos);
 export const videoSelectSchema = createSelectSchema(videos);
+
+export const reportReason = pgEnum("report_reason", [
+    'ai',
+    'clickbait',
+    'inappropriate',
+    'spam',
+    'harassment'
+])
+
+export const reports = pgTable("reports", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    videoId: uuid("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+    reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
+    reason: reportReason("reason").notNull(),
+    details: text("details"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+}, (t) => [
+    index("reports_video_idx").on(t.videoId),
+    index("reports_expires_idx").on(t.expiresAt)
+])
+
+export const reportVotes = pgTable("report_votes", {
+    reportId: uuid("report_id").references(() => reports.id, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    voteType: text("vote_type").notNull(), // 'agree' or 'disagree'
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.reportId, t.userId] })
+])
 
 
 //might not be necessary in postgresql because foreign keys already exist
@@ -128,7 +245,6 @@ export const videoViews = pgTable("video_views", {
 
 }, (t) => [
     primaryKey({
-        name: "video_views_pk",
         columns: [t.userId, t.videoId]
     })
 ])
@@ -137,6 +253,19 @@ export const videoViewSelectSchema = createSelectSchema(videoViews);
 export const videoViewInsertSchema = createInsertSchema(videoViews);
 export const videoViewUpdateSchema = createUpdateSchema(videoViews);
 
+
+export const rewardedView = pgTable("rewarded_view", {
+    userId: uuid("user_id").references(() => users.id, {onDelete: "cascade"}).notNull(),
+    videoId: uuid("video_id").references(() => videos.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    xpEarned: integer("xp_earned"),
+}, (t) => [
+    primaryKey({
+        name: "video_views_pk",
+        columns: [t.userId, t.videoId]
+    })
+])
 
 
 export const videoRatings = pgTable("video_ratings", {
@@ -289,4 +418,22 @@ export const messages = pgTable("messages", {
 
 export const messageInsertSchema = createInsertSchema(messages);
 export const messageSelectSchema = createSelectSchema(messages);
+
+export const bonusType = pgEnum("bonus_type", [
+    'welcome_2000',
+    'welcome_500'
+])
+
+export const bonusClaims = pgTable("bonus_claims", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    bonusType: bonusType("bonus_type").notNull(),
+    claimedAt: timestamp("claimed_at").defaultNow().notNull(),
+}, (t) => [
+    index("bonus_claims_user_idx").on(t.userId),
+    index("bonus_claims_type_idx").on(t.bonusType),
+])
+
+
+
 

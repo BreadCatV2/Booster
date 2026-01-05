@@ -1,4 +1,14 @@
+
+<img width="1170" height="220" alt="FinishedLongLogo" src="https://github.com/user-attachments/assets/aa896884-126b-40c7-aa61-1125a6e3d197" />
+
+<img width="3794" height="1885" alt="Boosterwithvertical" src="https://github.com/user-attachments/assets/4f4a0e9e-75d6-450f-846c-521877520537" />
+
+<img width="1866" height="1387" alt="Screenshot 2025-12-23 183455" src="https://github.com/user-attachments/assets/bdfec408-5fa9-44a6-bd64-4e9cfa9f6c6d" />
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+<img width="1906" height="938" alt="Screenshot 2025-12-17 135154" src="https://github.com/user-attachments/assets/3aa737c8-78a8-4596-bea7-abea34242999" />
+
 
 ## Getting Started
 
@@ -29,8 +39,11 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

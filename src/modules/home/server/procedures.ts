@@ -42,6 +42,7 @@ export const homeRouter = createTRPCRouter({
                 .with(viewerFollow)
                 .select({
                     ...getTableColumns(videos), //instead of ...videos
+                    viewCount: sql<number>`(SELECT count(*) FROM ${videoViews} WHERE ${videoViews.videoId} = ${videos.id})`.mapWith(Number),
                     user: {
                         ...getTableColumns(users),
                         followsCount: sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(Number),
@@ -49,7 +50,7 @@ export const homeRouter = createTRPCRouter({
                         videoCount: sql<number>`(SELECT COUNT(*) FROM ${videos} WHERE ${videos.userId} = ${users.id})`.mapWith(Number),
                         viewerRating : (userId ? sql<number>`(SELECT ${videoRatings.rating} FROM ${videoRatings} WHERE ${videoRatings.userId} = ${userId} AND ${videoRatings.videoId} = ${videos.id} LIMIT 1)`.mapWith(Number) : sql<number>`(NULL)`.mapWith(Number)),
                     },
-                    videoRatings: db.$count(videoRatings, eq(videoRatings.videoId, videos.id)), //inefficient?
+                    videoRatings: videos.ratingCount,
                 })
                 .from(videos)
                 .innerJoin(users, eq(videos.userId, users.id))
@@ -63,29 +64,10 @@ export const homeRouter = createTRPCRouter({
                 throw new TRPCError({ code: "NOT_FOUND" })
             }
 
-            const [viewCount] = await db
-                .select({
-                    count: sum(videoViews.seen)
-                })
-                .from(videoViews)
-                .where(eq(videoViews.videoId, input.id))
-
-
-
-
-            const [averageRating] = await db
-                .select({
-                    averageRating: avg(videoRatings.rating)
-                }).from(videoRatings)
-                .where(eq(videoRatings.videoId, input.id))
-
-
-
-            const average = Number(averageRating?.averageRating ?? 0);
             return {
                 ...existingVideo,
-                videoViews: Number(viewCount.count ?? 0),
-                averageRating: average,
+                videoViews: existingVideo.viewCount,
+                averageRating: existingVideo.averageRating,
                 viewer: user,
             }
         }),
@@ -94,8 +76,10 @@ export const homeRouter = createTRPCRouter({
         .input(
             z.object({
                 cursor: z.object({
-                    id: z.string().uuid(),
+                    id: z.string().uuid().nullish(),
                     score: z.number().nullish(),
+                    featuredId: z.string().uuid().nullish(),
+                    featuredScore: z.number().nullish(),
                 }).nullish(),
                 limit: z.number().min(1).max(100),
             })
@@ -103,102 +87,130 @@ export const homeRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const { cursor, limit } = input;
             const { clerkUserId } = ctx;
-            console.log(clerkUserId)
 
-            //TODO: add more points if the user is following the creator of the video
+            // Common Where Clauses
+            const baseWhere = and(
+                eq(videos.visibility, "public"), 
+                // not(eq(videos.status, "processing"))
+            );
 
-
-            const ratingsAgg = db
-                .select({
-                    videoId: videoRatings.videoId,
-                    avgRating: sql<number>`AVG(${videoRatings.rating})`.as('avgRating'),
-                    ratingCount: sql<number>`COUNT(*)`.as('ratingCount'),
-                })
-                .from(videoRatings)
-                .groupBy(videoRatings.videoId)
-                .as("ra");
-
-            // 2) Pre-aggregate comments per video
-            const commentsAgg = db
-                .select({
-                    videoId: comments.videoId,
-                    commentCount: sql<number>`COUNT(*)`.as('commentCount'),
-                })
-                .from(comments)
-                .groupBy(comments.videoId)
-                .as("ca");
-
-            const viewsAgg = db
-                .select({
-                    videoId: videoViews.videoId,
-                    viewCount: sql<number>`SUM(${videoViews.seen})`.as('viewCount')
-                }).from(videoViews)
-                .groupBy(videoViews.videoId)
-                .as("vv")
-
-            //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
-            // Give featured videos a boost in the score calculation
-            const scoreExpr = sql<number>`
-                    LN(
-                        POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 1)
-                        + LN(GREATEST(COALESCE(${viewsAgg.viewCount}, 0), 1))
-                        + TANH(COALESCE(${ratingsAgg.avgRating}, 0) - 3.5) 
-                        * LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        + CASE WHEN ${videos.isFeatured} = true THEN 5.0 ELSE 0.0 END
-                    )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                    `;
-
-            const whereParts: any[] = [and(eq(videos.visibility, "public"), not(eq(videos.status, "processing")))]
-
-            if (cursor && cursor.score != null) {
-                whereParts.push(
-                    or(
-                        lt(scoreExpr, cursor.score),
-                        and(sql`${scoreExpr} = ${cursor.score}`, lt(videos.id, cursor.id))
-                    )
-                );
+            // --- Normal Videos ---
+            let normalVideos: { id: string, updatedAt: Date, isFeatured: boolean, score: number }[] = [];
+            let nextNormalCursor: { id: string, score: number } | null = null;
+            
+            // Determine if we should fetch normal videos
+            // Fetch if cursor is null (start) OR cursor.id is present (continuation)
+            const shouldFetchNormal = !cursor || (cursor.id !== null && cursor.id !== undefined);
+            
+            if (shouldFetchNormal) {
+                const normalWhereParts = [
+                    baseWhere,
+                    eq(videos.isFeatured, false)
+                ];
+                
+                if (cursor && cursor.id && cursor.score != null) {
+                    normalWhereParts.push(
+                        or(
+                            lt(videos.trendingScore, cursor.score),
+                            and(eq(videos.trendingScore, cursor.score), lt(videos.id, cursor.id))
+                        )
+                    );
+                }
+                
+                const normalRows = await db
+                    .select({
+                        id: videos.id,
+                        updatedAt: videos.updatedAt,
+                        isFeatured: sql<boolean>`COALESCE(${videos.isFeatured}, false)`.mapWith(Boolean),
+                        score: videos.trendingScore,
+                    })
+                    .from(videos)
+                    .where(and(...normalWhereParts))
+                    .orderBy(desc(videos.trendingScore), desc(videos.id))
+                    .limit(limit + 1);
+                    
+                if (normalRows.length > limit) {
+                    const last = normalRows[limit - 1];
+                    nextNormalCursor = { id: last.id, score: last.score };
+                    normalVideos = normalRows.slice(0, limit);
+                } else {
+                    nextNormalCursor = null; // No more normal videos
+                    normalVideos = normalRows;
+                }
             }
 
+            // --- Featured Videos ---
+            let featuredVideos: { id: string, updatedAt: Date, isFeatured: boolean, score: number }[] = [];
+            let nextFeaturedCursor: { id: string, score: number } | null = null;
+            
+            // Fetch 1 featured video for every batch (assuming limit ~5)
+            const featuredLimit = 1; 
+            
+            const shouldFetchFeatured = !cursor || (cursor.featuredId !== null && cursor.featuredId !== undefined);
+            
+            if (shouldFetchFeatured) {
+                const featuredWhereParts = [
+                    baseWhere,
+                    eq(videos.isFeatured, true)
+                ];
+                
+                if (cursor && cursor.featuredId && cursor.featuredScore != null) {
+                    featuredWhereParts.push(
+                        or(
+                            lt(videos.trendingScore, cursor.featuredScore),
+                            and(eq(videos.trendingScore, cursor.featuredScore), lt(videos.id, cursor.featuredId))
+                        )
+                    );
+                }
+                
+                const featuredRows = await db
+                    .select({
+                        id: videos.id,
+                        updatedAt: videos.updatedAt,
+                        isFeatured: sql<boolean>`COALESCE(${videos.isFeatured}, false)`.mapWith(Boolean),
+                        score: videos.trendingScore,
+                    })
+                    .from(videos)
+                    .where(and(...featuredWhereParts))
+                    .orderBy(desc(videos.trendingScore), desc(videos.id))
+                    .limit(featuredLimit + 1);
+                    
+                if (featuredRows.length > featuredLimit) {
+                    const last = featuredRows[featuredLimit - 1];
+                    nextFeaturedCursor = { id: last.id, score: last.score };
+                    featuredVideos = featuredRows.slice(0, featuredLimit);
+                } else {
+                    nextFeaturedCursor = null;
+                    featuredVideos = featuredRows;
+                }
+            }
 
-            const rows = await db
-                .select({
-                    id: videos.id,
-                    updatedAt: videos.updatedAt,
-                    isFeatured: videos.isFeatured,
-                    score: sql<number>`
-                    LN(
-                        POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 1)
-                        + LN(GREATEST(COALESCE(${viewsAgg.viewCount}, 0), 1))
-                        + TANH(COALESCE(${ratingsAgg.avgRating}, 0) - 3.5) 
-                        * LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${ratingsAgg.ratingCount}, 0), 1))
-                        + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        + CASE WHEN ${videos.isFeatured} = true THEN 5.0 ELSE 0.0 END
-                    )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
+            // --- Combine ---
+            const combined = [...normalVideos];
+            // Insert featured videos at index 4 (5th position)
+            if (featuredVideos.length > 0) {
+                // If we have enough normal videos, insert at 4.
+                // If not, append.
+                if (combined.length >= 4) {
+                    combined.splice(4, 0, featuredVideos[0]);
+                } else {
+                    combined.push(featuredVideos[0]);
+                }
+            }
 
-                        `.as("score"),
-                })
-                .from(videos)
-                .leftJoin(users, eq(users.id, videos.userId))
-                .leftJoin(ratingsAgg, eq(ratingsAgg.videoId, videos.id))
-                .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
-                .leftJoin(viewsAgg, eq(viewsAgg.videoId, videos.id))
-                .where(and(...whereParts))
-                .orderBy(desc(sql`score`))
-                .limit(limit + 1);
-
-
-
-            const hasMore = rows.length > limit;
-            const items = hasMore ? rows.slice(0, -1) : rows;
-            const last = items[items.length - 1];
-            const nextCursor = hasMore && last ? { id: last.id, score: Number(last.score) } : null;
-
+            // --- Next Cursor ---
+            let nextCursor = null;
+            if (nextNormalCursor || nextFeaturedCursor) {
+                nextCursor = {
+                    id: nextNormalCursor?.id ?? null,
+                    score: nextNormalCursor?.score ?? null,
+                    featuredId: nextFeaturedCursor?.id ?? null,
+                    featuredScore: nextFeaturedCursor?.score ?? null,
+                };
+            }
 
             return {
-                items,
+                items: combined,
                 nextCursor,
             }
         })

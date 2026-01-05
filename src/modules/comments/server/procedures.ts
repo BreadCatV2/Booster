@@ -2,8 +2,10 @@ import { db } from "@/db";
 import { commentReactions, comments, users, videos, notifications } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { eq, getTableColumns, inArray, desc, sql, or, and, lt, isNull, asc } from "drizzle-orm";
+import { eq, getTableColumns, inArray, desc, sql, or, and, lt, isNull, asc, gt } from "drizzle-orm";
 import z from "zod";
+import { updateVideoScore } from "@/modules/videos/server/utils";
+import { commentRateLimit } from "@/lib/ratelimit";
 
 export const commentsRouter = createTRPCRouter({
   getTopLevel: baseProcedure
@@ -114,10 +116,10 @@ export const commentsRouter = createTRPCRouter({
           eq(comments.parentId,commentId),
           cursor
             ? or(
-              lt(comments.updatedAt, cursor.updatedAt),                 // older than cursor
+              gt(comments.updatedAt, cursor.updatedAt),                 // older than cursor
               and(
                 eq(comments.updatedAt, cursor.updatedAt),               // same time -> tie-break
-                lt(comments.commentId, cursor.commentId)                // lexicographic on UUID
+                gt(comments.commentId, cursor.commentId)                // lexicographic on UUID
               )
             )
             : undefined
@@ -146,7 +148,7 @@ export const commentsRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({
       videoId: z.string().uuid(),
-      comment: z.string()
+      comment: z.string().min(1).max(2000)
     }))
     .mutation(async ({ ctx, input }) => {
 
@@ -160,6 +162,11 @@ export const commentsRouter = createTRPCRouter({
         userId = user.id
       } else {
         throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+
+      const { success } = await commentRateLimit.limit(userId);
+      if (!success) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "You are commenting too fast." });
       }
 
       const { videoId, comment } = input;
@@ -188,6 +195,12 @@ export const commentsRouter = createTRPCRouter({
         });
       }
 
+      // Update video comment count and score
+      await db.update(videos)
+        .set({ commentCount: sql`${videos.commentCount} + 1` })
+        .where(eq(videos.id, videoId));
+      await updateVideoScore(videoId);
+
       return createdComment;
     }),
 
@@ -195,7 +208,7 @@ export const commentsRouter = createTRPCRouter({
     .input(z.object({
       videoId: z.string().uuid(),
       parentId: z.string().uuid(),
-      comment: z.string()
+      comment: z.string().min(1).max(2000)
     }))
     .mutation(async ({ ctx, input }) => {
 
@@ -258,7 +271,109 @@ export const commentsRouter = createTRPCRouter({
           }).where(eq(comments.commentId,parentId))
         .returning()
 
+      // Update video comment count and score
+      await db.update(videos)
+        .set({ commentCount: sql`${videos.commentCount} + 1` })
+        .where(eq(videos.id, videoId));
+      await updateVideoScore(videoId);
+
       return createdComment;
+    }),
+
+  remove: protectedProcedure
+    .input(z.object({
+      commentId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { commentId } = input;
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, ctx.clerkUserId));
+
+      if (!user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const [commentToDelete] = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.commentId, commentId));
+
+      if (!commentToDelete) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (commentToDelete.userId !== user.id) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      // Delete the comment
+      const [deletedComment] = await db
+        .delete(comments)
+        .where(eq(comments.commentId, commentId))
+        .returning();
+
+      // If it was a reply, decrement parent's reply count
+      if (deletedComment.parentId) {
+        await db
+          .update(comments)
+          .set({ replies: sql`${comments.replies} - 1` })
+          .where(eq(comments.commentId, deletedComment.parentId));
+      }
+
+      // Decrement video comment count
+      // We need to subtract 1 (the comment itself) + the number of replies it had
+      const totalDeleted = 1 + deletedComment.replies;
+      await db
+        .update(videos)
+        .set({ commentCount: sql`${videos.commentCount} - ${totalDeleted}` })
+        .where(eq(videos.id, deletedComment.videoId));
+
+      // Update video score
+      await updateVideoScore(deletedComment.videoId);
+
+      return deletedComment;
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      commentId: z.string().uuid(),
+      comment: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { commentId, comment } = input;
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.clerkId, ctx.clerkUserId));
+
+      if (!user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const [existingComment] = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.commentId, commentId));
+
+      if (!existingComment) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (existingComment.userId !== user.id) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const [updatedComment] = await db
+        .update(comments)
+        .set({ comment, updatedAt: new Date() })
+        .where(eq(comments.commentId, commentId))
+        .returning();
+
+      return updatedComment;
     }),
 
 })

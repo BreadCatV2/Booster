@@ -1,7 +1,7 @@
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { DiveInButton } from "./dive-in-button";
-import { Play, Upload, Zap, Users, TrendingUp, Shield, Boxes, Sparkles } from "lucide-react";
+import { Play, Upload, Zap, Users, TrendingUp, Shield, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 export default function WelcomePage() {
@@ -29,7 +29,7 @@ export default function WelcomePage() {
                 Boost Your Creativity
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
-                The next-generation video platform where creators thrive and viewers decide what's next.
+                The video platform where creators thrive and viewers decide what&apos;s next.
             </p>
             <div className="pt-8 flex flex-col items-center">
                 <DiveInButton />
@@ -48,19 +48,20 @@ export default function WelcomePage() {
                         description="Share your videos with a community that values quality and originality."
                     />
                     <FeatureCard 
-                        icon={<Boxes className="w-10 h-10 text-secondary" />}
+                        icon={<Image src="/xpicon_plain_no_rgb_glow.png" alt="XP" width={80} height={80} className="w-20 h-20 object-contain" />}
                         title="Boost Content"
                         description="Use XP to boost the videos you love and help them reach more viewers."
+                        noIconBackground
                     />
                     <FeatureCard 
                         icon={<Users className="w-10 h-10 text-blue-500" />}
                         title="Join the Community"
-                        description="Engage with creators, build your network, and grow together."
+                        description="Engage with creators, build communities, and grow together."
                     />
                     <FeatureCard 
                         icon={<Sparkles className="w-10 h-10 text-purple-500" />}
                         title="Search with AI"
-                        description="Change your algorithm and discover recommended videos tailored by AI."
+                        description="Change your algorithm and discover recommended videos."
                     />
                 </div>
             </div>
@@ -99,10 +100,10 @@ export default function WelcomePage() {
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+function FeatureCard({ icon, title, description, noIconBackground }: { icon: React.ReactNode, title: string, description: string, noIconBackground?: boolean }) {
     return (
         <div className="bg-card p-8 rounded-2xl shadow-sm border hover:shadow-md transition-shadow flex flex-col items-center text-center">
-            <div className="mb-6 p-4 bg-background rounded-full shadow-sm border">{icon}</div>
+            <div className={`mb-6 flex items-center justify-center ${noIconBackground ? '' : 'p-4 bg-background rounded-full shadow-sm border'}`}>{icon}</div>
             <h3 className="text-xl font-bold mb-3">{title}</h3>
             <p className="text-muted-foreground">{description}</p>
         </div>
@@ -111,7 +112,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
 
 function BenefitItem({ icon, text }: { icon: React.ReactNode, text: string }) {
     return (
-        <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
+        <div className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
             <div className="text-primary">{icon}</div>
             <span className="font-medium">{text}</span>
         </div>

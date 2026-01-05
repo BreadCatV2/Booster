@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { deleteBunnyVideo } from "@/lib/bunny";
 import { db } from "@/db";
+import { uploadRateLimit } from "@/lib/ratelimit";
 import {
   comments,
   userFollows,
@@ -8,6 +10,9 @@ import {
   videos,
   videoUpdateSchema,
   videoViews,
+  assets,
+  communities,
+  communityModerators,
 } from "@/db/schema";
 import {
   createTRPCRouter,
@@ -96,6 +101,7 @@ export const videosRouter = createTRPCRouter({
           ...getTableColumns(videos), //instead of ...videos
           user: {
             ...getTableColumns(users),
+            equippedTitle: assets.name,
             followsCount:
               sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
                 Number
@@ -111,6 +117,10 @@ export const videosRouter = createTRPCRouter({
                   Number
                 )
               : sql<number>`(NULL)`.mapWith(Number),
+            
+            viewerHasViewed: userId
+              ? sql<boolean>`EXISTS (SELECT 1 FROM ${videoViews} WHERE ${videoViews.userId} = ${userId} AND ${videoViews.videoId} = ${videos.id})`.mapWith(Boolean)
+              : sql<boolean>`false`.mapWith(Boolean),
           },
           videoRatings: db.$count(
             videoRatings,
@@ -119,6 +129,7 @@ export const videosRouter = createTRPCRouter({
         })
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id))
+        .leftJoin(assets, eq(users.equippedTitleId, assets.assetId))
         .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
         .where(eq(videos.id, input.id));
       //inner join to get data of user
@@ -177,11 +188,66 @@ export const videosRouter = createTRPCRouter({
       if (user) {
         userId = user.id;
       }
+
+      const [currentVideo] = await db
+        .select({ 
+          categoryId: videos.categoryId,
+          embedding: videos.embedding,
+          tags: videos.tags
+        })
+        .from(videos)
+        .where(eq(videos.id, videoId));
+
+      const currentCategoryId = currentVideo?.categoryId;
+      const currentEmbedding = currentVideo?.embedding;
+      const currentTags = currentVideo?.tags;
+
       const viewerFollow = db.$with("viewer_follow").as(
         db
           .select()
           .from(userFollows)
           .where(inArray(userFollows.userId, userId ? [userId] : []))
+      );
+
+      const viewerView = db.$with("viewer_view").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+          })
+          .from(videoViews)
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videoViews.videoId)
+      );
+
+      const userCategoryAffinity = db.$with("user_category_affinity").as(
+        db
+          .select({
+            categoryId: videos.categoryId,
+            affinityScore: sum(videoViews.seen).as("affinityScore"),
+          })
+          .from(videoViews)
+          .innerJoin(videos, eq(videoViews.videoId, videos.id))
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videos.categoryId)
+      );
+
+      const similarViewers = db.$with("similar_viewers").as(
+        db
+          .select({ userId: videoViews.userId })
+          .from(videoViews)
+          .where(eq(videoViews.videoId, videoId ?? "00000000-0000-0000-0000-000000000000"))
+          .limit(50)
+      );
+
+      const collaborativeMatch = db.$with("collaborative_match").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+            matchCount: count(videoViews.userId).as("matchCount"),
+          })
+          .from(videoViews)
+          .innerJoin(similarViewers, eq(videoViews.userId, similarViewers.userId))
+          .groupBy(videoViews.videoId)
       );
 
       const ratingStats = db.$with("video_stats").as(
@@ -215,6 +281,7 @@ export const videosRouter = createTRPCRouter({
 
       //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
       const scoreExpr = sql<number>`
+                            (
                             LN(
                                 POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
                                 + COALESCE(${videoViewsStats.viewCount}, 0) 
@@ -223,6 +290,15 @@ export const videosRouter = createTRPCRouter({
                                 + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
                                 + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
                             )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
+                            )
+                            + (100 / LN(GREATEST(EXTRACT(EPOCH FROM (NOW() - ${videos.createdAt})) / 3600 + 2, 2)))
+                            - (CASE WHEN ${viewerView.videoId} IS NOT NULL THEN 100 ELSE 0 END)
+                            + (CASE WHEN ${viewerFollow.userId} IS NOT NULL THEN 50 ELSE 0 END)
+                            + (20 * LN(COALESCE(${userCategoryAffinity.affinityScore}, 0) + 1))
+                            + (CASE WHEN ${videos.categoryId} = ${currentCategoryId ?? null} THEN 50 ELSE 0 END)
+                            + (CASE WHEN ${currentEmbedding ? sql`(${videos.embedding} <=> ${JSON.stringify(currentEmbedding)}::vector)` : sql`1`} < 0.5 THEN 100 ELSE 0 END)
+                            + (CASE WHEN ${currentTags && currentTags.length > 0 ? sql`${videos.tags} && ${sql.raw(`'{${currentTags.join(',')}}'`)}` : sql`false`} THEN 50 ELSE 0 END)
+                            + (COALESCE(${collaborativeMatch.matchCount}, 0) * 20)
                     `;
 
       const whereParts: any[] = [
@@ -233,6 +309,10 @@ export const videosRouter = createTRPCRouter({
         ),
       ];
 
+      if (user && user.aiContentEnabled === false) {
+        whereParts.push(eq(videos.isAi, false));
+      }
+
       if (cursor && cursor.score != null) {
         whereParts.push(
           or(
@@ -240,14 +320,15 @@ export const videosRouter = createTRPCRouter({
             and(sql`${scoreExpr} = ${cursor.score}`, lt(videos.id, cursor.id))
           )
         );
+        whereParts.push(not(eq(videos.id, cursor.id)));
       }
-
       const rows = await db
-        .with(viewerFollow, ratingStats, videoViewsStats)
+        .with(viewerFollow, ratingStats, videoViewsStats, viewerView, userCategoryAffinity, similarViewers, collaborativeMatch)
         .select({
           ...getTableColumns(videos),
           user: {
             ...getTableColumns(users),
+            equippedTitle: assets.name,
             followsCount:
               sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
                 Number
@@ -263,16 +344,7 @@ export const videosRouter = createTRPCRouter({
                 )
               : sql<number>`(NULL)`.mapWith(Number),
           },
-          score: sql<number>`
-                        LN(
-                            POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
-                            + COALESCE(${videoViewsStats.viewCount}, 0) 
-                            + TANH(COALESCE(${ratingStats.averageRating}, 0) - 3.5)
-                            * LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                            `.as("score"),
+          score: scoreExpr.as("score"),
 
           videoRatings: ratingStats.ratingCount,
           averageRating: ratingStats.averageRating,
@@ -280,12 +352,16 @@ export const videosRouter = createTRPCRouter({
         })
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id))
+        .leftJoin(assets, eq(users.equippedTitleId, assets.assetId))
         .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
         .leftJoin(ratingStats, eq(ratingStats.videoId, videos.id))
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
         .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
+        .leftJoin(viewerView, eq(viewerView.videoId, videos.id))
+        .leftJoin(userCategoryAffinity, eq(userCategoryAffinity.categoryId, videos.categoryId))
+        .leftJoin(collaborativeMatch, eq(collaborativeMatch.videoId, videos.id))
         .where(and(...whereParts))
-        .orderBy(desc(sql`score`))
+        .orderBy(desc(sql`score`), desc(videos.id))
         .limit(limit + 1);
 
       const hasMore = rows.length > limit;
@@ -358,6 +434,14 @@ export const videosRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
+      if (removedVideo.bunnyVideoId && removedVideo.bunnyLibraryId) {
+        try {
+          await deleteBunnyVideo(removedVideo.bunnyLibraryId, removedVideo.bunnyVideoId);
+        } catch (error) {
+          console.error("Failed to delete video from BunnyCDN:", error);
+        }
+      }
+
       const upload_key = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}`; // unique key
 
       console.log("upload_key", upload_key);
@@ -392,11 +476,47 @@ export const videosRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(videoUpdateSchema)
+    .input(videoUpdateSchema.extend({
+      title: z.string().min(1).max(200).optional(),
+      description: z.string().max(5000).optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user;
       if (!input.id) {
         throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (input.communityId) {
+        const [community] = await db
+          .select({ allowUserPosts: communities.allowUserPosts })
+          .from(communities)
+          .where(eq(communities.communityId, input.communityId));
+
+        if (!community) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Community not found",
+          });
+        }
+
+        if (!community.allowUserPosts) {
+          const [isModerator] = await db
+            .select()
+            .from(communityModerators)
+            .where(
+              and(
+                eq(communityModerators.communityId, input.communityId),
+                eq(communityModerators.userId, userId)
+              )
+            );
+
+          if (!isModerator) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Only moderators can post in this community",
+            });
+          }
+        }
       }
 
       const textToEmbed = `${input.title}\n${input.description}`;
@@ -409,6 +529,7 @@ export const videosRouter = createTRPCRouter({
           title: input.title,
           description: input.description,
           categoryId: input.categoryId,
+          communityId: input.communityId,
           visibility:
             input.visibility === "private" || input.visibility === "public"
               ? input.visibility
@@ -416,6 +537,7 @@ export const videosRouter = createTRPCRouter({
           updatedAt: new Date(),
           isAi: input.isAi,
           embedding: embedding,
+          tags: input.tags,
         })
         .where(and(eq(videos.id, input.id), eq(videos.userId, userId)))
         .returning();
@@ -429,6 +551,11 @@ export const videosRouter = createTRPCRouter({
 
   //to get URL endpoint
   getDirectUpload: protectedProcedure.mutation(async ({ ctx }) => {
+    const { success } = await uploadRateLimit.limit(ctx.user.id);
+    if (!success) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "You have reached your daily upload limit." });
+    }
+
     const directUpload = await mux.video.uploads.create({
       cors_origin: "*", //TODO: in production change to my url
       new_asset_settings: {
@@ -564,7 +691,7 @@ export const videosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id: userId } = ctx.user;
+      const { id: userId, accountType } = ctx.user;
       const [row] = await db
         .insert(videos)
         .values({
@@ -577,6 +704,7 @@ export const videosRouter = createTRPCRouter({
           bunnyStatus: "uploaded", // webhook will flip to "ready"
           s3Name: "a",
           isAi: false,
+          isFeatured: accountType === 'business',
         })
         .returning();
       return row;

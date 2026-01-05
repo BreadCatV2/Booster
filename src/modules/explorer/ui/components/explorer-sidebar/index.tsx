@@ -1,7 +1,10 @@
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar"
 import { MainSection } from "./main-section"
 import { Separator } from "@/components/ui/separator"
-// import { PersonalSection } from "./personal-section"
+import { RankingsSection } from "./rankings-section"
+import { FooterSection } from "./footer-section"
+import { FollowingSection } from "./following-section"
+import { PersonalSection } from "./personal-section"
 
 
 interface Props {
@@ -11,10 +14,14 @@ interface Props {
 export const ExplorerSidebar = ({ collapsible, variant }: Props) => {
     return (
         <Sidebar className="pt-16 z-40 overflow-hidden bg-background [&>div:last-child]:border-none [&_div[data-sidebar='sidebar']]:border-none border-none " collapsible={collapsible} variant={variant}>
-            <SidebarContent className='bg-white dark:bg-background overflow-hidden -ml-2' >
+            <SidebarContent className='bg-sidebar overflow-y-auto -ml-2 gap-2' >
                 <MainSection />
+                {/* <RankingsSection /> */}
                 <Separator />
-                {/* <PersonalSection /> */}
+                <FollowingSection />
+                <Separator />
+                <PersonalSection />
+                <FooterSection />
             </SidebarContent>
         </Sidebar>
     )

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -21,7 +22,8 @@ import {
     Check,
     X,
     Upload,
-    Search
+    Search,
+    Monitor
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -65,7 +67,7 @@ export const PersonalizeView = () => {
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [roleSearch, setRoleSearch] = useState('');
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const { theme, setTheme } = useTheme();
     const [selectedAccent, setSelectedAccent] = useState(0);
 
     const SelectedIconComponent = ICONS[selectedIcon].icon;
@@ -298,7 +300,7 @@ export const PersonalizeView = () => {
                                 <div className="space-y-6">
                                     <div>
                                         <h3 className="text-xl font-bold mb-4">Theme</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <button
                                                 onClick={() => setTheme('light')}
                                                 className={cn(
@@ -326,7 +328,22 @@ export const PersonalizeView = () => {
                                                 </div>
                                                 <div className="text-left">
                                                     <div className="font-medium">Dark Mode</div>
-                                                    <div className="text-sm text-muted-foreground">Easy on the eyes</div>
+                                                    <div className="text-sm text-muted-foreground">Easy on the eyes!</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => setTheme('retro')}
+                                                className={cn(
+                                                    "border rounded-lg p-4 flex items-center transition-all",
+                                                    theme === 'retro' ? "border-blue-500 bg-blue-50 dark:bg-blue-950" : "border-border"
+                                                )}
+                                            >
+                                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-300 to-gray-400 mr-4 flex items-center justify-center border-2 border-gray-500 shadow-inner">
+                                                    <Monitor className="w-6 h-6 text-gray-700" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="font-medium">Retro Mode</div>
+                                                    <div className="text-sm text-muted-foreground">2009 Internet Style</div>
                                                 </div>
                                             </button>
                                         </div>

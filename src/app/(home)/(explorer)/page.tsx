@@ -16,7 +16,7 @@ const Page = async ({searchParams}: Props) => {
 
     const {categoryId} = await searchParams;
 
-    void trpc.explorer.getMany.prefetchInfinite({limit: DEFAULT_LIMIT * 2, categoryId});
+    void trpc.explorer.getMany.prefetchInfinite({limit: DEFAULT_LIMIT, categoryId});
     
     return (
         <HydrateClient>

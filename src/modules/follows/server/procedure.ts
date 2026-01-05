@@ -1,15 +1,59 @@
 import { db } from "@/db";
-import { userFollows, users, notifications } from "@/db/schema";
+import { userFollows, users, notifications, videos } from "@/db/schema";
 import {
   createTRPCRouter,
   protectedProcedure,
   baseProcedure,
 } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { sql, eq, and, inArray, getTableColumns, } from "drizzle-orm";
+import { sql, eq, and, inArray, getTableColumns, desc } from "drizzle-orm";
 import z from "zod";
 
 export const followsRouter = createTRPCRouter({
+  getFollowedUsers: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.user.id;
+
+      const followedUsers = await db
+        .select({
+          user: users,
+        })
+        .from(userFollows)
+        .innerJoin(users, eq(userFollows.creatorId, users.id))
+        .where(eq(userFollows.userId, userId));
+
+      const usersWithVideos = await Promise.all(
+        followedUsers.map(async ({ user }) => {
+          const recentVideos = await db
+            .select({
+              video: videos,
+              user: {
+                id: users.id,
+                name: users.name,
+                imageUrl: users.imageUrl,
+              },
+            })
+            .from(videos)
+            .innerJoin(users, eq(videos.userId, users.id))
+            .where(
+              and(
+                eq(videos.userId, user.id),
+                eq(videos.visibility, "public")
+              )
+            )
+            .limit(10)
+            .orderBy(desc(videos.createdAt));
+
+          return {
+            ...user,
+            recentVideos,
+          };
+        })
+      );
+
+      return usersWithVideos;
+    }),
+
   getFollowersByUserId: baseProcedure
     .input(z.object({ userId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -162,4 +206,31 @@ export const followsRouter = createTRPCRouter({
     // console.log(following,userId,clerkUserId)
     return following;
   }),
+
+  getFollowingWithRecentUploads: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { user } = ctx;
+
+      const recentUploaders = await db
+        .select({
+          user: users,
+          lastUploadDate: sql<Date>`MAX(${videos.createdAt})`.as("last_upload_date")
+        })
+        .from(users)
+        .innerJoin(userFollows, eq(users.id, userFollows.creatorId))
+        .innerJoin(videos, eq(users.id, videos.userId))
+        .where(and(
+          eq(userFollows.userId, user.id),
+          eq(videos.status, 'completed'),
+          eq(videos.visibility, 'public')
+        ))
+        .groupBy(users.id)
+        .orderBy(desc(sql`last_upload_date`))
+        .limit(5);
+
+      return recentUploaders.map(r => ({
+        ...r.user,
+        lastUploadDate: r.lastUploadDate
+      }));
+    }),
 });

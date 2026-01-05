@@ -4,17 +4,26 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { UserAvatar } from "@/components/user-avatar";
 import { trpc } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
-import { compactDate, compactNumber } from "@/lib/utils";
+import { compactDate, compactNumber, cn } from "@/lib/utils";
+import { getTitleGradient } from "@/constants";
 import {
   Check,
   EyeIcon,
+  EyeOff,
   Lock,
   Rocket,
   Sparkles,
   StarIcon,
   Settings,
   MessageSquare,
+  Clapperboard,
+  VideoOff,
+  Instagram,
+  Twitter,
+  Youtube,
+  Music,
+  Gamepad2,
+  Globe
 } from "lucide-react";
 import { XpCard } from "@/modules/home/ui/components/xp-card";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
@@ -27,9 +36,12 @@ import { useFollow } from "@/modules/follows/hooks/follow-hook";
 import { SubButton } from "@/modules/subscriptions/ui/components/sub-button";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
 import { getUserIcons } from "@/modules/market/components/assetIcons/functions/get-user-icons";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { PersonalizeModal } from "../components/personalize-modal";
 import { useNotificationDropdown } from "@/contexts/notification-context";
+
+import { BusinessProfileSection } from "../components/business-profile-section";
+import { CommunityChat } from "@/modules/community/ui/components/channel-chat";
 
 interface Props {
   userId: string;
@@ -49,6 +61,7 @@ const diff_time = (date?: Date | string | null): number => {
 
 export const UsersView = ({ userId }: Props) => {
   const { userId: clerkUserId } = useAuth();
+  const { user: clerkUser } = useUser();
   const { openMessages } = useNotificationDropdown();
   const [user] = trpc.users.getByUserId.useSuspenseQuery({ userId });
   const [followers] = trpc.follows.getFollowersByUserId.useSuspenseQuery({ userId, });
@@ -58,6 +71,15 @@ export const UsersView = ({ userId }: Props) => {
 
   // Fetch equipped asset to trigger re-renders when it changes
   const { data: equippedAsset } = trpc.users.getEquippedAsset.useQuery(
+    { userId },
+    {
+      refetchOnMount: true,
+      staleTime: 0,
+    }
+  );
+
+  // Fetch equipped title
+  const { data: equippedTitle } = trpc.users.getEquippedTitle.useQuery(
     { userId },
     {
       refetchOnMount: true,
@@ -81,6 +103,16 @@ export const UsersView = ({ userId }: Props) => {
 
   const utils = trpc.useUtils();
 
+  useEffect(() => {
+    if (clerkUser && isOwnProfile) {
+      // Add a small delay to allow the webhook to process the changes in the database
+      const timeout = setTimeout(() => {
+        utils.users.getByUserId.invalidate({ userId });
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [clerkUser?.updatedAt?.getTime(), isOwnProfile, userId, utils]);
+
   const prefetchRankings = useCallback(() => {
     utils.xp.getBoostersByCreatorId.prefetch({ creatorId: userId });
   }, [utils, userId]);
@@ -97,7 +129,7 @@ export const UsersView = ({ userId }: Props) => {
   // Handle navigation to specific tab via URL hash
   useEffect(() => {
     const hash = window.location.hash.substring(1); // Remove the # symbol
-    if (hash === "community" || hash === "about" || hash === "rewards") {
+    if (hash === "leaderboard" || hash === "about" || hash === "rewards") {
       setActiveTab(hash);
     }
   }, []);
@@ -111,7 +143,7 @@ export const UsersView = ({ userId }: Props) => {
 
   const recentUpgrade = diff_time(user?.newLevelUpgrade) <= 72;
 
-  const updateLevelChange = trpc.xp.updateLevelChange.useMutation({
+  const { mutate: updateLevel } = trpc.xp.updateLevelChange.useMutation({
     onSuccess: () => {
       utils.users.getByUserId.invalidate({ userId });
     },
@@ -134,12 +166,12 @@ export const UsersView = ({ userId }: Props) => {
     ) {
       setNewLevel(channelLevel);
       setShowLevelUp(true);
-      updateLevelChange.mutate({ userId });
+      updateLevel({ userId });
     }
     previousLevelRef.current = channelLevel;
-  }, [channelLevel, isInitialLoad, userId]); // Removed prefetchRankings and updateLevelChange to prevent infinite loop
+  }, [channelLevel, isInitialLoad, userId, prefetchRankings, updateLevel]);
 
-  //TODO: implement community rankings
+  
 
   // Calculate XP bar percentage
   const xpPercentage = Math.max(
@@ -196,10 +228,23 @@ export const UsersView = ({ userId }: Props) => {
               <div className="flex flex-col items-center">
                 <div className="flex items-center justify-center text-center max-w-full">
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent  line-clamp-2 max-w-[200px] md:max-w-[400px]">
-                    {/* Code With Antonio and Angelie for a good software development j */}
                     {user?.name || "Unknown User"}
                   </h1>
                 </div>
+
+                {user.username && (
+                  <div className="text-sm text-muted-foreground -mt-1 mb-1">
+                    @{user.username}
+                  </div>
+                )}
+                
+                {/* Title Display */}
+                {equippedTitle && (
+                    <div className={cn("mt-1 font-bold bg-clip-text text-transparent bg-gradient-to-r text-sm", getTitleGradient(equippedTitle.name))}>
+                        {equippedTitle.name}
+                    </div>
+                )}
+
                 {/* <PlanetIcon className="text-yellow-600 ml-2 shadow-red-100/50 bg-transparent size-8 flex-shrink-0" /> */}
                 <div className="mt-1" key={equippedAsset?.assetId || 'no-asset'}>
 
@@ -242,66 +287,79 @@ export const UsersView = ({ userId }: Props) => {
             </div>
 
             {/* XP POP UP */}
-            {showXpPopup && (
+            {showXpPopup && user.accountType !== 'business' && (
               <XpCard user={user} setShowAddXpModal={setShowXpPopup} />
             )}
 
             <div className="md:w-2/3 md:pl-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Channel Boost
-                </h2>
-                <div
-                  className={`text-primary font-bold flex items-center gap-2 ${showLevelUp ? "animate-bounce" : ""
-                    }`}
-                >
-                  Level {channelLevel}
-                  {showLevelUp && (
-                    <Sparkles className="w-4 h-4 text-yellow-500 animate-spin" />
-                  )}
-                </div>
-              </div>
+              {user.accountType === 'business' ? (
+                <BusinessProfileSection 
+                  userId={user.id}
+                  isOwnProfile={isOwnProfile}
+                  businessDescription={user.businessDescription}
+                  businessImageUrls={user.businessImageUrls}
+                />
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Channel Boost
+                    </h2>
+                    <div
+                      className={`text-primary font-bold flex items-center gap-2 ${showLevelUp ? "animate-bounce" : ""
+                        }`}
+                    >
+                      Level {channelLevel}
+                      {showLevelUp && (
+                        <Sparkles className="w-4 h-4 text-yellow-500 animate-spin" />
+                      )}
+                    </div>
+                  </div>
 
-              <div className="w-full h-6 bg-muted/20 rounded-full overflow-hidden border border-border mb-2 relative">
-                <div
-                  className="h-full bg-gradient-to-r from-primary to-secondary rounded-full relative overflow-hidden transition-all duration-1000 ease-out"
-                  style={{ width: `${xpPercentage}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/40 mix-blend-overlay"></div>
+                  <div className="w-full h-6 bg-muted/20 rounded-full overflow-hidden border border-border mb-2 relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-secondary rounded-full relative overflow-hidden transition-all duration-1000 ease-out"
+                      style={{ width: `${xpPercentage}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/40 mix-blend-overlay"></div>
 
-                  {/* Animated shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] animate-shine"></div>
-                </div>
+                      {/* Animated shine effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] animate-shine"></div>
+                    </div>
+                  </div>
 
-                {/* Level up indicator notch */}
-                {/* <div 
-                  className="absolute top-0 h-full w-1 bg-yellow-400 shadow-lg"
-                  style={{ left: `${xpPercentage}%` }}
-                /> */}
-              </div>
-
-              <div className="flex justify-between text-muted-foreground text-sm mb-4">
-                <div className="flex items-start gap-1 text-center">
-                  <span className="font-semibold">Boost progress </span>
-                  <span>{xpPercentage.toFixed(2)}% </span>
-                </div>
-                <span>
-                  {(xpForNextLevel - boostPoints.boostPoints).toLocaleString()}{" "}
-                  XP for next level
-                </span>
-              </div>
+                  <div className="flex justify-between text-muted-foreground text-sm mb-4">
+                    <div className="flex items-start gap-1 text-center">
+                      <span className="font-semibold">Boost progress </span>
+                      <span>{xpPercentage.toFixed(2)}% </span>
+                    </div>
+                    <span>
+                      {(xpForNextLevel - boostPoints.boostPoints).toLocaleString()}{" "}
+                      XP for next level
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between gap-2">
 
                 {isOwnProfile ? (
                   // Show "Personalize Channel" button for own profile
-                  <Button
-                    onClick={() => setShowPersonalizeModal(true)}
-                    // className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
-                    className="rounded-full shadow-sm hover:from-amber-400 hover:to-orange-400"
-                  >
-                    <Settings className="size-4 mr-2" />
-                    Personalize Channel
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setShowPersonalizeModal(true)}
+                      // className="rounded-full p-4 shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
+                      className="rounded-full shadow-sm hover:from-amber-400 hover:to-orange-400 bg-gradient-to-b from-primary to-secondary text-textprimary"
+                    >
+                      <Settings className="size-4 mr-2" />
+                      Personalize Channel
+                    </Button>
+                    <Link href="/studio">
+                      <Button className="rounded-full shadow-sm border-gray-200 dark:border-gray-700" variant="outline">
+                        <Clapperboard className="size-4 mr-2" />
+                        Studio
+                      </Button>
+                    </Link>
+                  </div>
                 ) : (
                   // Show Follow button for other users
                   <>
@@ -332,7 +390,7 @@ export const UsersView = ({ userId }: Props) => {
                   </Button>
                 )}
 
-                {!isOwnProfile && (
+                {!isOwnProfile && user.accountType !== 'business' && (
                   <Button
                     onClick={() => setShowXpPopup(true)}
                     className="bg-gradient-to-r from-primary to-secondary text-primary-foreground font-bold py-2 px-6 rounded-full hover:opacity-90 transition-all hover:scale-105 active:scale-95"
@@ -345,34 +403,25 @@ export const UsersView = ({ userId }: Props) => {
               </div>
 
               <div className="flex justify-between ">
-                <div className="mt-6">
-                  <h3 className="text-primary font-semibold mb-3">
-                    Unlocked Rewards
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm">
-                      <span className="text-primary mr-2">
-                        <Check className="size-4" />
-                      </span>
-                      <span>Custom Emotes</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="text-primary mr-2">
-                        <Check className="size-4" />
-                      </span>
-                      <span>Extended Video Upload Quality</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <span className="text-primary mr-2">
-                        <Lock className="size-4" />
-                      </span>
-                      <span>Verified</span>
+                {user.accountType !== 'business' && (
+                  <div className="mt-6">
+                    <h3 className="text-primary font-semibold mb-3">
+                      Next Reward
+                    </h3>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/50 pr-10">
+                      <div className="bg-background p-2 rounded-lg shadow-sm">
+                        <Lock className="size-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Verified Badge</p>
+                        <p className="text-xs text-muted-foreground">Unlocks at Level 10</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div>
-                  {recentUpgrade && <LevelUpBadge newLevel={channelLevel} />}
+                  {recentUpgrade && user.accountType !== 'business' && <LevelUpBadge newLevel={channelLevel} />}
                 </div>
               </div>
             </div>
@@ -381,7 +430,14 @@ export const UsersView = ({ userId }: Props) => {
 
         {/* Content Tabs */}
         <div className="flex flex-wrap gap-2 my-6 bg-muted/50 p-2 rounded-xl border border-border w-fit">
-          {["videos", "community", "rewards", "about"].map((tab) => (
+          {["videos", "leaderboard", "rewards", "about", "chat"]
+            .filter(tab => {
+              if (user.accountType === 'business') {
+                return tab !== 'leaderboard' && tab !== 'rewards';
+              }
+              return true;
+            })
+            .map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -396,56 +452,173 @@ export const UsersView = ({ userId }: Props) => {
         </div>
 
         {/* Video Grid */}
-        {activeTab === "videos" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {userVideos.userVideos.map((video) => (
-              <Link
-                key={video.id}
-                className="group bg-[#000000] rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer"
-                href={`/videos/${video.id}`}
-              >
-                <div className="relative overflow-hidden rounded-t-2xl">
-                  <VideoThumbnail
-                    duration={video.duration || 0}
-                    title={video.title}
-                    imageUrl={video.thumbnailUrl}
-                    previewUrl={video.previewUrl}
-                  />
-                </div>
-                <div className="p-3">
-                  <h3 className="font-semibold line-clamp-2 mb-2">
-                    {video.title || "Untitled Video"}
-                  </h3>
-                  <div className="flex justify-between text-muted-foreground text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <EyeIcon className="size-4" />
-                        {compactNumber(Number(video.videoViews) || 0)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <StarIcon className="size-4 text-yellow-300" />
-                        {(Number(video.averageRating) || 0).toFixed(1)}
-                      </span>
-                    </div>
-                    <span>{compactDate(video.createdAt)}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        {activeTab === "videos" && (() => {
+          const filteredVideos = userVideos.userVideos.filter(video => isOwnProfile || video.visibility === 'public');
 
-        {activeTab === "community" && <BoosterRankings userId={userId} />}
+          if (filteredVideos.length === 0) {
+            return (
+              <div className="flex flex-col items-center justify-center py-20 mt-6 border border-dashed border-border rounded-2xl bg-muted/10">
+                <div className="bg-muted/50 rounded-full p-6 mb-4">
+                  <VideoOff className="size-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">No videos found</h3>
+                <p className="text-muted-foreground text-center max-w-sm px-4">
+                  {isOwnProfile
+                    ? "You haven't uploaded any videos yet."
+                    : "This user hasn't uploaded any videos yet or they are private."}
+                </p>
+                {isOwnProfile && (
+                  <Link href="/studio">
+                    <Button className="mt-6 rounded-full" variant="default">
+                      <Clapperboard className="size-4 mr-2" />
+                      Go to Studio
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {filteredVideos.map((video) => (
+                <Link
+                  key={video.id}
+                  className="group bg-card border border-border rounded-2xl transition-transform hover:scale-[1.02] cursor-pointer shadow-sm"
+                  href={`/videos/${video.id}`}
+                >
+                  <div className="relative overflow-hidden rounded-t-2xl">
+                    <VideoThumbnail
+                      duration={video.duration || 0}
+                      title={video.title}
+                      imageUrl={video.thumbnailUrl}
+                      previewUrl={video.previewUrl}
+                      isAi={video.isAi}
+                    />
+                    {video.visibility === 'private' && (
+                      <div className="absolute top-2 left-2 bg-black/60 rounded-md p-1">
+                        <EyeOff className="size-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-semibold line-clamp-2 mb-2 text-foreground">
+                      {video.title || "Untitled Video"}
+                    </h3>
+                    <div className="flex justify-between text-muted-foreground text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <EyeIcon className="size-4" />
+                          {compactNumber(Number(video.videoViews) || 0)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <StarIcon className="size-4 text-yellow-500 dark:text-yellow-300" />
+                          {(Number(video.averageRating) || 0).toFixed(1)}
+                        </span>
+                      </div>
+                      <span>{compactDate(video.createdAt)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          );
+        })()}
+
+        {activeTab === "leaderboard" && <BoosterRankings userId={userId} />}
 
         {activeTab === "rewards" && <RewardsView userId={userId} />}
 
         {activeTab === "about" && (
           <div className="bg-card rounded-xl p-6 border border-border">
             <h3 className="text-lg font-semibold mb-4">About</h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground whitespace-pre-wrap mb-6">
               {user.about || "No description available."}
             </p>
+
+            {(user.instagram || user.twitter || user.youtube || user.tiktok || user.discord || user.website) && (
+              <>
+                <h3 className="text-lg font-semibold mb-4">Socials</h3>
+                <div className="flex flex-wrap gap-4">
+                  {user.instagram && (
+                    <a 
+                      href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Instagram className="size-5 text-pink-600" />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {user.twitter && (
+                    <a 
+                      href={user.twitter.startsWith('http') ? user.twitter : `https://twitter.com/${user.twitter}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Twitter className="size-5 text-blue-400" />
+                      <span>Twitter</span>
+                    </a>
+                  )}
+                  {user.youtube && (
+                    <a 
+                      href={user.youtube.startsWith('http') ? user.youtube : `https://youtube.com/${user.youtube}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Youtube className="size-5 text-red-600" />
+                      <span>YouTube</span>
+                    </a>
+                  )}
+                  {user.tiktok && (
+                    <a 
+                      href={user.tiktok.startsWith('http') ? user.tiktok : `https://tiktok.com/@${user.tiktok.replace('@', '')}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Music className="size-5 text-black dark:text-white" />
+                      <span>TikTok</span>
+                    </a>
+                  )}
+                  {user.discord && (
+                    <a 
+                      href={user.discord.startsWith('http') ? user.discord : `https://discord.gg/${user.discord}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Gamepad2 className="size-5 text-indigo-500" />
+                      <span>Discord</span>
+                    </a>
+                  )}
+                  {user.website && (
+                    <a 
+                      href={user.website.startsWith('http') ? user.website : `https://${user.website}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      <Globe className="size-5 text-green-600" />
+                      <span>Website</span>
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
           </div>
+        )}
+
+        {activeTab === "chat" && (
+            <div className="mt-6">
+                <CommunityChat 
+                    channelId={userId} 
+                    isFollowing={followers[0]?.viewerIsFollowing || isOwnProfile} 
+                />
+            </div>
         )}
       </div>
 

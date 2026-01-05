@@ -1,8 +1,10 @@
 'use client';
 
 import { Mail } from "lucide-react";
+import { Mail as RetroMail } from "@react95/icons";
+import { useTheme } from "next-themes";
 import { trpc } from "@/trpc/client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { NotificationDropdown } from "./notification-dropdown";
 import { useAuth } from "@clerk/nextjs";
@@ -12,6 +14,12 @@ export const NotificationBell = () => {
     const { isOpen, close, openNotifications } = useNotificationDropdown();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { userId: clerkUserId } = useAuth();
+    const { theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Get unread count
     const { data: unreadCount, refetch } = trpc.notifications.getUnreadCount.useQuery(
@@ -74,7 +82,7 @@ export const NotificationBell = () => {
                 )}
                 aria-label="Notifications"
             >
-                <Mail className="size-5" />
+                {mounted && theme === 'retro' ? <RetroMail variant="32x32_4" /> : <Mail className="size-5" />}
                 {totalUnread > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {totalUnread > 99 ? '99+' : totalUnread}

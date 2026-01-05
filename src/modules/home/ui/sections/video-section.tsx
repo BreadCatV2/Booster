@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Eye, Play, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 ;
 import { useAuth } from '@clerk/nextjs';
+import { useTheme } from 'next-themes';
 
 import { trpc } from '@/trpc/client';
 import { VideoReactions } from '@/modules/videos/ui/components/video-reactions';
@@ -56,7 +57,7 @@ const VideoSectionSkeleton = () => {
 
                     <div className="flex flex-col sm:flex-row gap-4">
                         {/* Channel Info Card Skeleton */}
-                        <div className="flex items-center bg-white dark:bg-[#333333] rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-700 shadow-sm flex-1">
+                        <div className="flex items-center bg-card rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-700 shadow-sm flex-1">
                             <div className="flex items-center gap-3 w-full">
                                 <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                                 <div className="flex-1 space-y-2">
@@ -89,7 +90,7 @@ const VideoSectionSkeleton = () => {
             </div>
 
             {/* COMMENTS PANEL SKELETON */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#333333] overflow-hidden shadow-sm h-[60px]">
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-card overflow-hidden shadow-sm h-[60px]">
                 <div className="p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -119,9 +120,10 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
     const { isSignedIn, userId: clerkUserId } = useAuth();
     const [showTitle, setShowTitle] = useState(true);
     const [isPlaying, setIsPlaying] = useState(true);
-    const [hasRewarded, setHasRewarded] = useState(false); // Prevent multiple XP rewards
-    const isRewardingRef = useRef(false); // Synchronous flag to prevent race conditions
+    const hasViewedRef = useRef(false); // Synchronous ref to prevent race conditions
+    const durationRef = useRef(0);
     const videoPlayerRef = useRef<{ play: () => void; pause: () => void }>(null);
+    const { theme } = useTheme();
 
     const utils = trpc.useUtils();
 
@@ -131,26 +133,6 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
     });
     const userId = user?.id;
 
-    // Add XP reward mutation for featured videos
-    const { mutate: rewardXp } = trpc.xp.rewardXp.useMutation({
-        onSuccess: (data) => {
-            utils.xp.getXpByUserId.invalidate({ userId });
-            // Show success message for XP reward
-            toast.success(`🎉 You earned ${data.xpAdded} XP for watching this featured video to the end!`);
-        },
-        onError: (error) => {
-            console.error("Failed to reward XP:", error);
-            toast.error("Failed to award XP. Please try again later.");
-            setHasRewarded(false); // Reset on error so user can try again
-            isRewardingRef.current = false; // Reset ref flag on error
-        }
-    });
-
-    // Reset reward flag when video changes
-    useEffect(() => {
-        setHasRewarded(false);
-        isRewardingRef.current = false;
-    }, [video.id]);
 
     useEffect(() => {
         const t = setTimeout(() => setShowTitle(false), 4000);
@@ -158,17 +140,37 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
     }, []);
 
     const createView = trpc.videoViews.create.useMutation({
-        onSuccess: () => {
+        onSuccess: (data) => {
             utils.videos.getOne.invalidate({ id: videoId });
+            utils.users.getByClerkId.invalidate({ clerkId: clerkUserId }); // Update user XP in real-time
+            console.log("VIEWWW")
         },
+        onError: (error) => {
+            console.error("Failed to create view:", error);
+            // Reset viewed state on error so they can try again? 
+            // Maybe not, to avoid spamming if it's a persistent error.
+        }
     });
+
+      const createRewardedView = trpc.rewardView.awardXpForView.useMutation({
+        onSuccess: (data) => {
+            utils.xp.getXpByUserId.invalidate({ userId });
+            if(data.xpEarned == 0){
+                toast.info(data.message);
+            }else{
+                toast.success(data.message);
+            }
+        }
+    })
+
+
 
     useEffect(() => {
         setIsPlaying(true)
         if (!isSignedIn) return;
 
         // Create view for all videos
-        createView.mutate({ videoId: video.id });
+        createView.mutate({ videoId });
     }, [video.id, isSignedIn])
 
     const createRating = trpc.videoRatings.create.useMutation({
@@ -191,28 +193,33 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
         return true;
     }
 
-    // Handle video end for featured videos - give XP when video is watched to completion
-    const handleVideoEnd = useCallback(() => {
-        console.log("Video ended for video:", video.id, "isFeatured:", video.isFeatured, "isSignedIn:", isSignedIn, "userId:", userId, "hasRewarded:", hasRewarded, "isRewarding:", isRewardingRef.current);
 
-        // Prevent multiple executions with synchronous flag
-        if (hasRewarded || isRewardingRef.current) {
-            console.log("XP already rewarded or currently rewarding for this video, skipping");
-            return;
-        }
+    const handleTimeUpdate = useCallback((data: { seconds: number, duration: number, percent: number }) => {
+        // Handle potential different data structures from player
+        // @ts-ignore
+        const seconds = data.seconds || data.currentTime;
+        const duration = data.duration;
+        durationRef.current = duration;
+        
+        // console.log("TimeUpdate Home:", { seconds, duration, isSignedIn, hasViewed, isFeatured: video.isFeatured });
 
-        if (video.isFeatured && isSignedIn && userId) {
-            console.log("Awarding XP for featured video completion");
-            isRewardingRef.current = true; // Set synchronous flag immediately
-            setHasRewarded(true); // Set state flag
-            rewardXp({
-                amount: 20,
-                videoId: video.id
-            });
-        } else {
-            console.log("XP not awarded - conditions not met");
+
+
+        if (!isSignedIn || hasViewedRef.current) return;
+
+        if (!seconds || !duration) return;
+
+        const percentage = (seconds / duration) * 100;
+        const isFeatured = video.isFeatured;
+
+        if(!isFeatured) return;
+        
+        // If featured, reward after 5 seconds. Otherwise, reward after 30% watched.
+        if ((Math.floor(seconds) == 5) || (percentage >= 99)) {
+            hasViewedRef.current = true;
+            createRewardedView.mutate({ videoId });
         }
-    }, [video.isFeatured, video.id, isSignedIn, userId, hasRewarded, rewardXp]);
+    }, [isSignedIn, video.id, createView, video.isFeatured]);
 
     return (
         <div className="h-full w-full flex flex-col overflow-hidden">
@@ -307,7 +314,8 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
                         libraryId={video.bunnyLibraryId}
                         videoId={video.bunnyVideoId}
                         autoplay
-                        onVideoEnd={video.isFeatured ? handleVideoEnd : undefined}
+                        theme={theme}
+                        onTimeUpdate={handleTimeUpdate}
                     />
 
                     {/* Play button overlay */}
@@ -350,11 +358,11 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
                                 {video.title}
                             </p>
                         </motion.div>
-                        <VideoOwner user={video.user} videoId={video.id} boostPoints={Number(boostPoints.boostPoints)} />
+                        <VideoOwner user={video.user} videoId={video.id} boostPoints={Number(boostPoints.boostPoints)} className="w-[30%]" />
                     </div>
 
                     <div className="flex items-start gap-5 mt-3 mr-5 flex-shrink-0">
-                        <div className="inline-flex items-center gap-2 bg-white dark:bg-[#333333] border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-full text-gray-700 dark:text-gray-300 flex-shrink-0">
+                        <div className="inline-flex items-center gap-2 bg-card border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-full text-gray-700 dark:text-gray-300 flex-shrink-0">
                             <Eye className="h-4 w-4" /><span className="font-medium">{compactNumber(video.videoViews)}</span>
                         </div>
                         {video.isFeatured && (
@@ -372,7 +380,7 @@ export const VideoSectionSuspense = ({ videoId, next, prev }: Props) => {
 
                 {/* COMMENTS PANEL */}
                 <motion.div
-                    className={cn("flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#212121] backdrop-blur-md shadow-sm mt-[14px]")}
+                    className={cn("flex-1 min-h-0 rounded-2xl border border-gray-200 dark:border-gray-700 bg-card backdrop-blur-md shadow-sm mt-[14px]")}
                     initial={false}
                     transition={{ duration: 0.35, ease: 'easeInOut' }}
                     onMouseEnter={() => setCommentsOpen(true)}

@@ -5,13 +5,19 @@ import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { OnboardingCheck } from "@/components/onboarding-check";
+
 import { TRPCProvider } from "@/trpc/client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NotificationProvider } from "@/contexts/notification-context";
 import UnreadTitleUpdater from '@/components/unread-title-updater'
 
-const montserrat = Montserrat({ 
-    subsets: ["latin"], 
+const montserrat = Montserrat({
+    subsets: ["latin"],
     display: "swap",
     weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
     style: ['normal', 'italic'],
@@ -26,8 +32,19 @@ export const metadata: Metadata = {
         default: "Booster",
         template: "%s | Booster",
     },
-    description: "Video platform oriented for creators and users",
+    description: "Video platform where ",
     keywords: ['video', 'creators', 'video platform', 'shorts', 'longform', 'streaming', 'uploader', 'booster videos'],
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
     alternates: {
         canonical: "/",
     },
@@ -41,59 +58,73 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: "summary_large_image",
-                site: "@BoosterVideos",
-                creator: "@BoosterVideos",
+        site: "@BoosterVideos",
+        creator: "@BoosterVideos",
     },
     icons: [
         { rel: "icon", url: "/favicon.ico" },
-        { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
-        { rel: "manifest", url: "/site.webmanifest" },
+        { rel: "apple-touch-icon", url: "/favicon.ico" },
     ],
-        // allow indexing by default
-        robots: {
-            index: true,
-            follow: true,
-            nosnippet: false,
-            noarchive: false,
-            // Search engine-specific directives
-            googleBot: {
-                index: true,
-                follow: true,
-            }
-        }
 };
 
 export const viewport: Viewport = {
     themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#0b0b0b" }, { color: "#ffffff" }],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+    const { userId } = await auth();
+    let accountType = null;
+    if (userId) {
+        const [user] = await db.select({ accountType: users.accountType }).from(users).where(eq(users.clerkId, userId));
+        if (user) {
+            accountType = user.accountType;
+        }
+    }
+
     return (
         <ClerkProvider>
             <html lang="en" suppressHydrationWarning className={montserrat.variable}>
                 <head>
                     <link rel="preconnect" href="https://vitals.vercel-analytics.com" crossOrigin="" />
-                                            <link rel="preload" as="image" href="/BoosterLongLogo.tmp.png" />
-                                                    <link rel="image_src" href={`${SITE_URL}/BoosterLongLogo.tmp.png`} />
-                        <link rel="manifest" href="/site.webmanifest" />
+                    <link rel="preload" as="image" href="/BoosterLongLogo.tmp.png" />
+                    <link rel="image_src" href={`${SITE_URL}/BoosterLongLogo.tmp.png`} />
+                    <link rel="manifest" href="/site.webmanifest" />
                     {/* JSON-LD structured data for Organization + WebSite */}
-                                            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-                                                    "@context": "https://schema.org",
-                                                    "@type": "WebSite",
-                                                    "url": SITE_URL,
-                                                    "name": "Booster",
-                                                    "potentialAction": {
-                                                        "@type": "SearchAction",
-                                                        "target": `${SITE_URL}/search?q={search_term_string}`,
-                                                        "query-input": "required name=search_term_string"
-                                                    }
-                                            }) }} />
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{
+                            __html: JSON.stringify([
+                                {
+                                    "@context": "https://schema.org",
+                                    "@type": "WebSite",
+                                    "url": SITE_URL,
+                                    "name": "Booster",
+                                    "potentialAction": {
+                                        "@type": "SearchAction",
+                                        "target": `${SITE_URL}/search?q={search_term_string}`,
+                                        "query-input": "required name=search_term_string"
+                            }                              },
+                                {
+                                    "@context": "https://schema.org",
+                                    "@type": "Organization",
+                                    "name": "Booster",
+                                    "url": SITE_URL,
+                                    "logo": `${SITE_URL}/BoosterLongLogo.tmp.png`,
+                                    "sameAs": [
+                                        "https://twitter.com/BoosterVideos",
+                                        // Add other social profiles here
+                                    ]
+                                }
+                            ])
+                        }}
+                    />
                 </head>
-                <body className={`${montserrat.className} antialiased`}>
-                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                <body className={`${montserrat.className} antialiased bg-background text-foreground`}>
+                    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange themes={['light', 'dark', 'retro']}>
                         <TRPCProvider>
                             <NotificationProvider>
                                 <UnreadTitleUpdater />
+                                <OnboardingCheck accountType={accountType} userId={userId} />
                                 {children}
                                 <Toaster richColors closeButton />
                                 <Analytics />

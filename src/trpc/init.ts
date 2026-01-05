@@ -1,12 +1,13 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { cache } from 'react';
 import superjson from 'superjson';
+import { headers } from 'next/headers';
 
-import { ratelimit } from '@/lib/ratelimit';
+import { ratelimit, publicRateLimit } from '@/lib/ratelimit';
 
 export const createTRPCContext = cache(async () => {
   /** NO DATABASE QUERIES HERE
@@ -14,8 +15,10 @@ export const createTRPCContext = cache(async () => {
    */
 
   const { userId } = await auth();
+  const heads = await headers();
+  const ip = heads.get("x-forwarded-for") ?? "127.0.0.1";
 
-  return { clerkUserId: userId };
+  return { clerkUserId: userId, ip };
 
   // return { userId: 'user_123' };
 });
@@ -36,7 +39,14 @@ const t = initTRPC.context<Context>().create({
 // Base router and procedure helpers
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
-export const baseProcedure = t.procedure;
+export const baseProcedure = t.procedure.use(async (opts) => {
+  const { ctx } = opts;
+  const { success } = await publicRateLimit.limit(ctx.ip);
+  if (!success) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+  }
+  return opts.next();
+});
 
 
 export const protectedProcedure = t.procedure.use(async function isAuthed(opts){
@@ -46,7 +56,40 @@ export const protectedProcedure = t.procedure.use(async function isAuthed(opts){
     throw new TRPCError({code: "UNAUTHORIZED"});
   }
 
-  const [user] = await db.select().from(users).where(eq(users.clerkId,ctx.clerkUserId)).limit(1);
+  let [user] = await db.select().from(users).where(eq(users.clerkId,ctx.clerkUserId)).limit(1);
+
+  console.log("protectedProcedure user:", user);
+
+  if (!user) {
+    // Fallback: Sync user from Clerk if not found in DB (e.g. webhook failed)
+    try {
+      const clerkUser = await currentUser();
+      
+      if (clerkUser && clerkUser.id === ctx.clerkUserId) {
+          let name = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
+          if (!name) {
+              if (clerkUser.username && clerkUser.username.trim()) {
+                  name = clerkUser.username;
+              } else {
+                  name = `Anonymous ${Math.floor(Math.random() * 100000)}`;
+              }
+          }
+          name = name.substring(0, 50);
+          
+          const [newUser] = await db.insert(users).values({
+              clerkId: clerkUser.id,
+              name: name,
+              username: clerkUser.username,
+              imageUrl: clerkUser.imageUrl,
+          }).returning();
+          
+          user = newUser;
+      }
+    } catch (error) {
+      console.error("Failed to sync user from Clerk in protectedProcedure fallback:", error);
+      // Continue to throw UNAUTHORIZED below if user is still null
+    }
+  }
 
   if (!user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });

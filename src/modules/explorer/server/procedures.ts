@@ -6,6 +6,7 @@ import {
   videoRatings,
   videos,
   videoViews,
+  assets,
 } from "@/db/schema";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import {
@@ -18,7 +19,6 @@ import {
   inArray,
   isNotNull,
   lt,
-  gt,
   not,
   or,
   sql,
@@ -29,13 +29,113 @@ import { categories } from "../../../db/schema";
 import { embedText } from "@/modules/videos/server/procedures";
 
 export const explorerRouter = createTRPCRouter({
+  getFeatured: baseProcedure
+    .query(async ({ ctx }) => {
+      const { clerkUserId } = ctx;
+      let userId;
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(inArray(users.clerkId, clerkUserId ? [clerkUserId] : []));
+
+      if (user) {
+        userId = user.id;
+      }
+
+      const viewerFollow = db.$with("viewer_follow").as(
+        db
+          .select()
+          .from(userFollows)
+          .where(inArray(userFollows.userId, userId ? [userId] : []))
+      );
+
+      const ratingStats = db.$with("video_stats").as(
+        db
+          .select({
+            videoId: videoRatings.videoId,
+            ratingCount: count(videoRatings.rating).as("ratingCount"),
+            averageRating: avg(videoRatings.rating).as("avgRating"),
+          })
+          .from(videoRatings)
+          .groupBy(videoRatings.videoId)
+      );
+
+      const videoViewsStats = db.$with("video_views_stats").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+            viewCount: sum(videoViews.seen).as("viewCount"),
+          })
+          .from(videoViews)
+          .groupBy(videoViews.videoId)
+      );
+
+      const commentsAgg = db
+        .select({
+          videoId: comments.videoId,
+          commentCount: sql<number>`COUNT(*)`.as("commentCount"),
+        })
+        .from(comments)
+        .groupBy(comments.videoId)
+        .as("ca");
+
+      const rows = await db
+        .with(viewerFollow, ratingStats, videoViewsStats)
+        .select({
+          ...getTableColumns(videos),
+          user: {
+            ...getTableColumns(users),
+            equippedTitle: assets.name,
+            followsCount:
+              sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
+                Number
+              ),
+            viewerIsFollowing: isNotNull(viewerFollow.userId).mapWith(Boolean),
+            videoCount:
+              sql<number>`(SELECT COUNT(*) FROM ${videos} WHERE ${videos.userId} = ${users.id})`.mapWith(
+                Number
+              ),
+            viewerRating: userId
+              ? sql<number>`(SELECT ${videoRatings.rating} FROM ${videoRatings} WHERE ${videoRatings.userId} = ${userId} AND ${videoRatings.videoId} = ${videos.id} LIMIT 1)`.mapWith(
+                  Number
+                )
+              : sql<number>`(NULL)`.mapWith(Number),
+          },
+          category: {
+            ...getTableColumns(categories),
+          },
+          videoRatings: ratingStats.ratingCount,
+          averageRating: ratingStats.averageRating,
+          videoViews: videoViewsStats.viewCount,
+        })
+        .from(videos)
+        .innerJoin(users, eq(videos.userId, users.id))
+        .leftJoin(assets, eq(users.equippedTitleId, assets.assetId))
+        .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
+        .leftJoin(ratingStats, eq(ratingStats.videoId, videos.id))
+        .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
+        .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
+        .leftJoin(categories, eq(videos.categoryId, categories.id))
+        .where(and(
+          eq(videos.visibility, "public"),
+          not(eq(videos.status, "processing")),
+          eq(videos.isFeatured, true),
+          user?.aiContentEnabled === false ? eq(videos.isAi, false) : undefined
+        ))
+        .orderBy(desc(videos.createdAt))
+        .limit(20);
+
+      return rows;
+    }),
+
   getEmbedding: baseProcedure
     .input(
       z.object({
         text: z.string().min(1),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
         const {text} = input;
         const embedding = await embedText(text);
         console.log("Embedding:", embedding);
@@ -138,7 +238,8 @@ export const explorerRouter = createTRPCRouter({
       const whereParts: any[] = [
         and(
           eq(videos.visibility, "public"),
-          not(eq(videos.status, "processing"))
+          not(eq(videos.status, "processing")),
+          user?.aiContentEnabled === false ? eq(videos.isAi, false) : undefined
         ),
       ];
 
@@ -156,6 +257,7 @@ export const explorerRouter = createTRPCRouter({
           ...getTableColumns(videos),
           user: {
             ...getTableColumns(users),
+            equippedTitle: assets.name,
             followsCount:
               sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
                 Number
@@ -183,6 +285,7 @@ export const explorerRouter = createTRPCRouter({
         })
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id))
+        .leftJoin(assets, eq(users.equippedTitleId, assets.assetId))
         .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
         .leftJoin(ratingStats, eq(ratingStats.videoId, videos.id))
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
@@ -197,7 +300,7 @@ export const explorerRouter = createTRPCRouter({
       const items = hasMore ? rows.slice(0, -1) : rows;
       const last = items[items.length - 1];
       const nextCursor = hasMore && last
-        ? { id: last.id, distance: Number((last as any).distance), embedding: embeddingArr }
+        ? { id: last.id, distance: Number((last as any).distance) }
         : null;
 
       return {
@@ -240,6 +343,30 @@ export const explorerRouter = createTRPCRouter({
           .where(inArray(userFollows.userId, userId ? [userId] : []))
       );
 
+      const viewerView = db.$with("viewer_view").as(
+        db
+          .select({
+            videoId: videoViews.videoId,
+          })
+          .from(videoViews)
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videoViews.videoId)
+      );
+
+      const userCategoryAffinity = db.$with("user_category_affinity").as(
+        db
+          .select({
+            categoryId: videos.categoryId,
+            affinityScore: sum(videoViews.seen).as("affinityScore"),
+          })
+          .from(videoViews)
+          .innerJoin(videos, eq(videoViews.videoId, videos.id))
+          .where(inArray(videoViews.userId, userId ? [userId] : []))
+          .groupBy(videos.categoryId)
+      );
+
+      // console.log("User Category Affinity SQL:", userCategoryAffinity.affinityScore);
+
       const ratingStats = db.$with("video_stats").as(
         db
           .select({
@@ -269,8 +396,9 @@ export const explorerRouter = createTRPCRouter({
         .groupBy(comments.videoId)
         .as("ca");
 
-      //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
+      // Score calculation with time decay, watch history, and following status
       const scoreExpr = sql<number>`
+                            (
                             LN(
                                 POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
                                 + COALESCE(${videoViewsStats.viewCount}, 0) 
@@ -279,14 +407,27 @@ export const explorerRouter = createTRPCRouter({
                                 + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
                                 + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
                             )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
+                            )
+                            + (100 / LN(GREATEST(EXTRACT(EPOCH FROM (NOW() - ${videos.createdAt})) / 3600 + 2, 2)))
+                            - (CASE WHEN ${viewerView.videoId} IS NOT NULL THEN 100 ELSE 0 END)
+                            + (CASE WHEN ${viewerFollow.userId} IS NOT NULL THEN 50 ELSE 0 END)
+                            + LN(COALESCE(${userCategoryAffinity.affinityScore}, 0) + 1) * 20
                     `;
 
       const whereParts: any[] = [
         and(
           eq(videos.visibility, "public"),
-          not(eq(videos.status, "processing"))
+          // not(eq(videos.status, "processing"))
         ),
       ];
+
+      if (user && user.verticalVideosEnabled === false) {
+        whereParts.push(sql`${videos.width} >= ${videos.height}`);
+      }
+
+      if (user && user.aiContentEnabled === false) {
+        whereParts.push(eq(videos.isAi, false));
+      }
 
       if (cursor && cursor.score != null) {
         whereParts.push(
@@ -302,11 +443,12 @@ export const explorerRouter = createTRPCRouter({
       }
 
       const rows = await db
-        .with(viewerFollow, ratingStats, videoViewsStats)
+        .with(viewerFollow, ratingStats, videoViewsStats, viewerView,userCategoryAffinity)
         .select({
           ...getTableColumns(videos),
           user: {
             ...getTableColumns(users),
+            equippedTitle: assets.name,
             followsCount:
               sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
                 Number
@@ -322,16 +464,7 @@ export const explorerRouter = createTRPCRouter({
                 )
               : sql<number>`(NULL)`.mapWith(Number),
           },
-          score: sql<number>`
-                        LN(
-                            POWER(COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0) + 1, 2)  
-                            + COALESCE(${videoViewsStats.viewCount}, 0) 
-                            + TANH(COALESCE(${ratingStats.averageRating}, 0) - 3.5)
-                            * LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${ratingStats.ratingCount}, 0), 1))
-                            + LN(GREATEST(COALESCE(${commentsAgg.commentCount}, 0), 1))
-                        )   * COALESCE(SQRT(${users.boostPoints} * 1000) / 1000, 0)
-                            `.as("score"),
+          score: scoreExpr.as("score"),
 
           category: {
             ...getTableColumns(categories),
@@ -343,13 +476,16 @@ export const explorerRouter = createTRPCRouter({
         })
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id))
+        .leftJoin(assets, eq(users.equippedTitleId, assets.assetId))
         .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
         .leftJoin(ratingStats, eq(ratingStats.videoId, videos.id))
         .leftJoin(videoViewsStats, eq(videoViewsStats.videoId, videos.id))
         .leftJoin(commentsAgg, eq(commentsAgg.videoId, videos.id))
         .leftJoin(categories, eq(videos.categoryId, categories.id))
+        .leftJoin(viewerView, eq(viewerView.videoId, videos.id))
+        .leftJoin(userCategoryAffinity, eq(userCategoryAffinity.categoryId, videos.categoryId))
         .where(and(...whereParts))
-        .orderBy(desc(sql`score`))
+        .orderBy(desc(sql`score`), desc(videos.id))
         .limit(limit + 1);
 
       const hasMore = rows.length > limit;

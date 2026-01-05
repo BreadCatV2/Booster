@@ -24,7 +24,7 @@ export const HomeView = () => {
                             <ul className="text-left text-sm text-gray-600 dark:text-gray-400 space-y-2 list-disc pl-6">
                                 <li>No videos are available yet</li>
                                 <li>All videos are still processing</li>
-                                <li>There&apos;s a database connection issue</li>
+                                <li>Database connection issue</li>
                             </ul>
                             <button 
                                 onClick={() => window.location.reload()} 
@@ -62,9 +62,6 @@ export const HomeViewSuspense = () => {
         );
     }, [data]);
 
-    console.log("HomeViewSuspense - Data:", data);
-    console.log("HomeViewSuspense - Videos:", videos);
-    console.log("HomeViewSuspense - Videos length:", videos.length);
 
     const [videoIndex, setVideoIndex] = useState(0);
     const [direction, setDirection] = useState(0);
@@ -89,7 +86,6 @@ export const HomeViewSuspense = () => {
     }, []);
 
     const goToNextVideo = useCallback(() => {
-        console.log("NEXT")
         setDirection(1);
         if (videoIndex + 1 >= videos.length && !query.isFetchingNextPage) {
             query.fetchNextPage();
@@ -136,7 +132,6 @@ export const HomeViewSuspense = () => {
         preventScrollOnSwipe: true,
     });
 
-    console.log("VIDEO INDEX", videoIndex, "VIDEOS:", videos)
 
     // Show empty state if no videos are available
     if (videos.length === 0) {

@@ -2,16 +2,17 @@
 
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { VideoBanner } from "../components/video-banner";
 import { VideoTopRow } from "../components/video-top-row";
-import { useAuth } from "@clerk/nextjs";
-import { toast } from "sonner";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Eye, Clock, Loader2 } from "lucide-react";
-import { DEFAULT_LIMIT } from "@/constants";
+import { Play, Eye, Clock, Loader2, Sparkles } from "lucide-react";
 import { BunnyEmbed } from "./BunnyEmbed";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { useTheme } from "next-themes";
 // import Player from "./Player";
 
 interface VideoSectionProps {
@@ -30,14 +31,14 @@ export const VideoSection = ({ videoId }: VideoSectionProps) => {
 
 const VideoSectionSkeleton = () => {
     return (
-        <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/30 to-transparent animate-shimmer" />
+        <div className="relative aspect-video rounded-3xl overflow-hidden bg-muted">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted-foreground/10 to-transparent animate-shimmer" />
             <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
                         <Loader2 className="h-8 w-8 text-white animate-spin" />
                     </div>
-                    <p className="text-gray-300 font-medium">Loading your video...</p>
+                    <p className="text-muted-foreground font-medium">Loading your video...</p>
                 </div>
             </div>
         </div>
@@ -46,13 +47,13 @@ const VideoSectionSkeleton = () => {
 
 const VideoErrorFallback = () => {
     return (
-        <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-red-900/20 to-rose-900/20 backdrop-blur-md border border-red-500/30">
+        <div className="relative aspect-video rounded-3xl overflow-hidden bg-destructive/10 backdrop-blur-md border border-destructive/30">
             <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 p-8 text-center">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex items-center justify-center">
                     <span className="text-2xl">⚠️</span>
                 </div>
-                <h3 className="text-xl font-semibold text-white">Video Unavailable</h3>
-                <p className="text-gray-300">We&aposre having trouble loading this video. Please try again later.</p>
+                <h3 className="text-xl font-semibold text-foreground">Video Unavailable</h3>
+                <p className="text-muted-foreground">We&aposre having trouble loading this video. Please try again later.</p>
                 <button className="px-6 py-2 bg-gradient-to-r from-red-500 to-rose-500 rounded-full text-white font-medium hover:shadow-lg transition-all">
                     Retry
                 </button>
@@ -64,8 +65,36 @@ const VideoErrorFallback = () => {
 const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     const [video] = trpc.videos.getOne.useSuspenseQuery({ id: videoId });
 
+    const { user: clerkUser } = useUser();
+    const clerkUserId = clerkUser?.id;
+    const { data: user } = trpc.users.getByClerkId.useQuery({
+        clerkId: clerkUserId,
+    });
+    const userId = user?.id;
+
+    const hasViewedRef = useRef(false); // Synchronous ref to prevent race conditions
+    const durationRef = useRef(0);
+    const utils = trpc.useUtils();
+    const { theme } = useTheme();
+
+    // Add XP reward mutation for featured videos
+    // const { mutate: rewardXp } = trpc.xp.rewardXp.useMutation({
+    //     onSuccess: (data) => {
+    //         utils.xp.getXpByUserId.invalidate({ userId });
+    //         // Show success message for XP reward
+    //         toast.success(`🎉 You earned ${data.xpAdded} XP for watching this featured video to the end!`);
+    //     },
+    //     onError: (error) => {
+    //         console.error("Failed to reward XP:", error);
+    //         toast.error("Failed to award XP. Please try again later.");
+    //         setHasRewarded(false); // Reset on error so user can try again
+    //         isRewardingRef.current = false; // Reset ref flag on error
+    //     }
+    // });
+
    
-    
+
+
     // console.log("BOOST AAAA",boostPoints.boostPoints)
 
     const [isPlaying, setIsPlaying] = useState(true)
@@ -73,32 +102,32 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
     const videoPlayerRef = useRef<{ play: () => void; pause: () => void }>(null);
 
     const { isSignedIn, } = useAuth();
-    const utils = trpc.useUtils();
+
     const createView = trpc.videoViews.create.useMutation({
-        onSuccess: () => {
+        onSuccess: (data) => {
             utils.videos.getOne.invalidate({ id: videoId }) //invalidate cache and get new updated views value
-        },
+            utils.users.getByClerkId.invalidate({ clerkId: clerkUserId }); // Update user XP in real-time
+           
+            
+        }, onError: (error) => {
+            console.error("Failed to create view:", error);
+            // toast.error("Failed to record view");
+        }
     });
 
-    // const [shouldPlay, setShouldPlay] = useState(false);
-
-    // useEffect(() => {
-    //     setShouldPlay(true);
-    // }, []);
-
+    const createRewardedView = trpc.rewardView.awardXpForView.useMutation({
+        onSuccess: (data) => {
+            utils.xp.getXpByUserId.invalidate({ userId });
+            if(data.xpEarned == 0){
+                toast.info(data.message);
+            }else{
+                toast.success(data.message);
+            }
+        }
+    })
 
 
     // const followingList = []
-
-    const createRating = trpc.videoRatings.create.useMutation({
-        onSuccess: () => {
-            utils.videos.getOne.invalidate({ id: videoId })
-            utils.home.getMany.invalidate({ limit: DEFAULT_LIMIT })
-        },
-        onError: (error) => {
-            if (error.message === "limit") toast.error("Wait a bit before rating again!")
-        }
-    })
 
     useEffect(() => {
         setIsPlaying(true)
@@ -110,16 +139,30 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         videoPlayerRef.current?.play()
     }
 
-    const onRate = (value: number) => {
-        if (!isSignedIn) return false; //TODO: Change to sign in option
-        if (!value) return false;
+    const handleTimeUpdate = useCallback((data: { seconds: number, duration: number, percent: number }) => {
+        // Handle potential different data structures from player
+        // @ts-ignore
+        const seconds = data.seconds || data.currentTime;
+        const duration = data.duration;
+        durationRef.current = duration;
 
-        createRating.mutate({
-            videoId,
-            newRating: value
-        })
-        return true;
-    }
+        // console.log("TimeUpdate:", { seconds, duration, isSignedIn, hasViewed, isFeatured: video.isFeatured });
+
+        if (!isSignedIn || hasViewedRef.current) return;
+
+        if (!seconds || !duration) return;
+
+        const percentage = (seconds / duration) * 100;
+        const isFeatured = video.isFeatured;
+
+        if (!isFeatured) return;
+
+        // If featured, reward after 5 seconds or video end
+        if (Math.floor(seconds) == 5 || percentage >= 99) {
+            hasViewedRef.current = true;
+            createRewardedView.mutate({ videoId });
+        }
+    }, [isSignedIn, videoId, createView, video.isFeatured]);
 
     return (
         <div className="xl:sticky xl:top-4 xl:self-start xl:h-fit xl:z-20 ">
@@ -174,6 +217,14 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
 
                 {/* Video layer */}
                 <div className="relative z-10 w-full h-full overflow-hidden rounded-3xl">
+                    {video.isAi && (
+                        <div className="absolute top-4 right-4 z-50">
+                            <Badge variant="secondary" className="bg-purple-100/90 backdrop-blur-sm text-purple-800 hover:bg-purple-200/90 border-purple-200 gap-1 whitespace-nowrap shadow-sm">
+                                <Sparkles className="size-3" />
+                                AI Generated
+                            </Badge>
+                        </div>
+                    )}
                     {/* <VideoPlayer
                         ref={videoPlayerRef}
                         autoPlay={isPlaying}
@@ -182,7 +233,12 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
                         playbackId={video.muxPlaybackId}
                         thumbnailUrl={video.thumbnailUrl}
                     /> */}
-                     <BunnyEmbed libraryId={video.bunnyLibraryId} videoId={video.bunnyVideoId} /> 
+                    <BunnyEmbed
+                        libraryId={video.bunnyLibraryId}
+                        videoId={video.bunnyVideoId}
+                        theme={theme}
+                        onTimeUpdate={handleTimeUpdate}
+                    />
                     {/*<Player src={video.playbackUrl} autoPlay={shouldPlay} isAI={video.isAi} />*/}
                 </div>
 
@@ -209,8 +265,8 @@ const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
             </div>
 
             <VideoBanner status={video.status || "processing"} />
-            <VideoTopRow video={video} onRate={onRate} />
-           
+            <VideoTopRow video={video} />
+
         </div>
     )
 }

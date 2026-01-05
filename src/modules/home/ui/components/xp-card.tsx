@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { CircleQuestionMark, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   user: User;
@@ -14,6 +15,8 @@ interface Props {
 }
 export const XpCard = ({ user,setShowAddXpModal,videoId }: Props) => {
   const [selectedXp, setSelectedXp] = useState(10);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customAmount, setCustomAmount] = useState<string>("");
   const xpOptions = [10, 20, 50, 75, 100, 500, 1000];
 
   const { userId: clerkUserId } = useAuth();
@@ -47,11 +50,17 @@ export const XpCard = ({ user,setShowAddXpModal,videoId }: Props) => {
 
 
   const handleAddXp = () => {
-    // Here you would implement the actual XP adding logic
-    if(loggedUserXp >= selectedXp){
-      buy.mutate({price:selectedXp, recipientId: user.id})
+    const amountToAdd = isCustom ? parseInt(customAmount) : selectedXp;
+    
+    if (!amountToAdd || isNaN(amountToAdd) || amountToAdd <= 0) {
+        toast.error("Please enter a valid amount");
+        return;
+    }
+
+    if(loggedUserXp >= amountToAdd){
+      buy.mutate({price: amountToAdd, recipientId: user.id})
       setShowAddXpModal(false);
-      toast.success(`Added ${selectedXp} points to ${user.name}`);
+      toast.success(`Added ${amountToAdd} points to ${user.name}`);
     }else{
       //TODO: implement buy xp dialog
       alert('not enough xp')
@@ -76,7 +85,7 @@ export const XpCard = ({ user,setShowAddXpModal,videoId }: Props) => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700 shadow-xl"
+            className="bg-card rounded-2xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
@@ -112,55 +121,80 @@ export const XpCard = ({ user,setShowAddXpModal,videoId }: Props) => {
               </p>
 
               {/* XP Slider */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    XP Amount
-                  </span>
-                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                    +{selectedXp}
-                  </span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="range"
-                    min="0"
-                    max="6"
-                    step="1"
-                    value={xpOptions.indexOf(selectedXp)}
-                    onChange={(e) =>
-                      setSelectedXp(xpOptions[parseInt(e.target.value)])
-                    }
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <div className="absolute top-3 left-0 right-0 flex justify-between pointer-events-none">
-                    {xpOptions.map((value, index) => (
-                      <div
-                        key={value}
-                        className={`w-0.5 h-3 bg-gray-400 rounded-full ${
-                          selectedXp === value ? "bg-amber-500 h-4" : ""
-                        }`}
-                        style={{
-                          marginLeft: `${getMarkerPosition(value, index)}%`,
-                        }}
-                      ></div>
-                    ))}
+              {!isCustom && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      XP Amount
+                    </span>
+                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                      +{selectedXp}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min="0"
+                      max="6"
+                      step="1"
+                      value={xpOptions.indexOf(selectedXp)}
+                      onChange={(e) =>
+                        setSelectedXp(xpOptions[parseInt(e.target.value)])
+                      }
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                      title="Select XP amount to boost"
+                    />
+                    <div className="absolute top-3 left-0 right-0 flex justify-between pointer-events-none">
+                      {xpOptions.map((value, index) => (
+                        <div
+                          key={value}
+                          className={`w-0.5 h-3 bg-gray-400 rounded-full ${
+                            selectedXp === value ? "bg-amber-500 h-4" : ""
+                          }`}
+                          style={{
+                            marginLeft: `${getMarkerPosition(value, index)}%`,
+                          }}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span>10</span>
+                    <span>1000</span>
                   </div>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <span>10</span>
-                  <span>1000</span>
+              )}
+
+              {/* Custom Amount Input */}
+              {isCustom && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Custom Amount
+                    </span>
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Enter XP amount"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    className="w-full"
+                    min={1}
+                  />
                 </div>
-              </div>
+              )}
 
               {/* Quick Select Buttons */}
               <div className="grid grid-cols-4 gap-3">
                 {xpOptions.map((xp) => (
                   <button
                     key={xp}
-                    onClick={() => setSelectedXp(xp)}
+                    onClick={() => {
+                      setSelectedXp(xp);
+                      setIsCustom(false);
+                    }}
                     className={`p-3 rounded-xl border transition-all ${
-                      selectedXp === xp
+                      !isCustom && selectedXp === xp
                         ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-md"
                         : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-400"
                     }`}
@@ -168,6 +202,16 @@ export const XpCard = ({ user,setShowAddXpModal,videoId }: Props) => {
                     <span className="font-semibold">+{xp}</span>
                   </button>
                 ))}
+                <button
+                  onClick={() => setIsCustom(true)}
+                  className={`p-3 rounded-xl border transition-all ${
+                    isCustom
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-md"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-amber-400"
+                  }`}
+                >
+                  <span className="font-semibold text-sm">Custom</span>
+                </button>
               </div>
             </div>
 

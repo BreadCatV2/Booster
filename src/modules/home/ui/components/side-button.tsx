@@ -30,24 +30,24 @@ export function SideNavButton({
         // layout & size
         'group relative inline-flex h-[72px] w-14 items-center justify-center rounded-2xl',
         // gradient border
-        'p-[1px] bg-gradient-to-b from-amber-200 to-orange-300',
+        'p-[1px] bg-gradient-to-b from-primary/50 to-secondary/50',
         // inner “glass” layer
         'before:absolute before:inset-[1px] before:rounded-2xl before:bg-white/80 before:backdrop-blur-md before:content-[""] dark:before:bg-zinc-900/70',
         // border/shadow
-        'shadow-[0_10px_20px_-10px_rgba(251,146,60,0.45)]',
+        'shadow-[0_10px_20px_-10px_rgba(var(--primary),0.45)]',
         // text color
-        'text-amber-700 dark:text-amber-300',
+        'text-primary',
         // hover/active
-        'hover:shadow-[0_16px_32px_-12px_rgba(251,146,60,0.55)] active:scale-95 transition',
+        'hover:shadow-[0_16px_32px_-12px_rgba(var(--primary),0.55)] active:scale-95 transition',
         // focus ring (accessible)
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 dark:focus-visible:ring-offset-zinc-950',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:focus-visible:ring-offset-zinc-950',
         // disabled
         disabled && 'opacity-40 pointer-events-none',
         className
       )}
     >
       {/* soft glow on hover */}
-      <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 blur-md transition bg-amber-300/40" />
+      <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 blur-md transition bg-primary/40" />
       {/* icon with directional nudge */}
       <Icon
         className={clsx(

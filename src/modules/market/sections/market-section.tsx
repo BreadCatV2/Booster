@@ -1,18 +1,22 @@
 'use client'
 
-import { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, Suspense, JSX } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Coins, ShoppingCart, Search, Filter, Crown, Palette, Sparkles, BadgeCheck, Zap, Star, Heart, Rocket, Lock, Check, Boxes, Box, Landmark, X, Video, CreditCard } from "lucide-react"
+import {  ShoppingCart,  Star, Lock, Check, Box, Landmark, X, Video, CreditCard, Crown, Users, Zap, Store } from "lucide-react"
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator"
 import { trpc } from "@/trpc/client"
 import { useAuth } from "@clerk/nextjs"
-import { AnimatedPlanetIcon } from "../components/assetIcons/animated-planet-icon"
 import { ErrorBoundary } from "react-error-boundary"
 import { Spinner } from "@/components/ui/shadcn-io/spinner"
+import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { type InferSelectModel } from "drizzle-orm"
+import { users } from "../../../db/schema"
+import { AnimatedPlanetIcon } from "../components/assetIcons/planet-animated-icon"
 
-
+type User = InferSelectModel<typeof users>;
 
 export const MarketSection = () => {
   return (
@@ -26,58 +30,94 @@ export const MarketSection = () => {
 
 export const MarketSectionSuspense = () => {
   const [activeAssets] = trpc.assets.getMany.useSuspenseQuery();
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showXpPopup, setShowXpPopup] = useState(false)
-  const [rewardedAdsEnabled, setRewardedAdsEnabled] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("icons")
+  const searchParams = useSearchParams();
+  const [showXpPopup, setShowXpPopup] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "get-xp") {
+      setShowXpPopup(true);
+    }
+  }, [searchParams]);
 
   const { userId: clerkUserId } = useAuth();
-  const { data: user } = trpc.users.getByClerkId.useQuery({
+  const { data: userData } = trpc.users.getByClerkId.useQuery({
     clerkId: clerkUserId,
+  }, {
+    enabled: !!clerkUserId,
   });
+  
+  const user = userData as User | undefined;
+
+  if ((user as any)?.accountType === 'business') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
+        <div className="bg-muted/30 p-8 rounded-2xl border border-border max-w-md">
+          <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Market Unavailable</h2>
+          <p className="text-muted-foreground">
+            The marketplace is not available for business accounts.
+          </p>
+          <Link href="/business">
+            <Button className="mt-6">
+              Go to Business Dashboard
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const userId = user?.id;
   const { data: myXp } = trpc.xp.getXpByUserId.useQuery(
     { userId: userId! },
     { enabled: !!userId, staleTime: 60_000, refetchOnWindowFocus: false }
   );
 
-  const [ownedItems] = trpc.assets.getAssetsByUser.useSuspenseQuery();
+  const { data: ownedItemsData } = trpc.assets.getAssetsByUser.useQuery(undefined, {
+    enabled: !!userId && (user as any)?.accountType !== 'business'
+  });
+  const ownedItems = ownedItemsData || [];
 
   const utils = trpc.useUtils();
+  const toggleAds = trpc.users.toggleRewardedAds.useMutation({
+    onSuccess: (data) => {
+      utils.users.getByClerkId.setData({ clerkId: clerkUserId }, data as any);
+      utils.users.getByClerkId.invalidate({ clerkId: clerkUserId });
+    },
+    onError: (error) => {
+      console.error("Error toggling rewarded ads:", error);
+    }
+  });
 
   const userCoins = myXp?.xp || 0;
 
-  const assetIcon = new Map([
-    [0, <AnimatedPlanetIcon size={24} key={0} />],
+  const TITLE_DEFINITIONS = [
+    { name: "CEO", gradient: "from-yellow-400 to-amber-600" },
+    { name: "BornToBoost", gradient: "from-blue-400 to-purple-600" },
+    { name: "President", gradient: "from-red-500 to-blue-600" },
+    { name: "Founder figure", gradient: "from-emerald-400 to-cyan-500" },
+    { name: "OG", gradient: "from-indigo-500 to-pink-500" },
+  ];
+
+  const getTitleGradient = (titleName: string) => {
+    const def = TITLE_DEFINITIONS.find(t => t.name === titleName);
+    return def?.gradient || "from-gray-900 to-gray-600";
+  };
+
+  const assetIcon = new Map<number, JSX.Element>([
+    [1, <Zap className="w-12 h-12 text-yellow-400" key={1} />],
+    [2, <Users className="w-12 h-12 text-blue-400" key={2} />],
+    [3, <Star className="w-12 h-12 text-purple-400" key={3} />],
+    [4, <AnimatedPlanetIcon size={12} key={4} className="text-amber-400" />]
   ])
 
   const filteredItems = activeAssets.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+    return matchesCategory
   })
 
-  // Add dummy items for display purposes (3 rows = 12 items on 4-column grid)
-  const dummyItems = [
-    { assetId: "dummy-1", name: "Golden Crown", price: 850, category: "icons", iconNumber: 0, emoji: "👑" },
-    { assetId: "dummy-2", name: "Fire Effect", price: 1200, category: "effects", iconNumber: 0, emoji: "🔥" },
-    { assetId: "dummy-3", name: "Rainbow Badge", price: 650, category: "badges", iconNumber: 0, emoji: "🌈" },
-    { assetId: "dummy-4", name: "Neon Glow", price: 950, category: "effects", iconNumber: 0, emoji: "✨" },
-    { assetId: "dummy-5", name: "Diamond Frame", price: 1500, category: "frames", iconNumber: 0, emoji: "💎" },
-    { assetId: "dummy-6", name: "Purple Theme", price: 2000, category: "themes", iconNumber: 0, emoji: "💜" },
-    { assetId: "dummy-7", name: "Lightning Bolt", price: 750, category: "icons", iconNumber: 0, emoji: "⚡" },
-    { assetId: "dummy-8", name: "Sunset Background", price: 1800, category: "backgrounds", iconNumber: 0, emoji: "🌅" },
-    { assetId: "dummy-9", name: "VIP Badge", price: 3000, category: "badges", iconNumber: 0, emoji: "⭐" },
-    { assetId: "dummy-10", name: "Pink Color", price: 500, category: "colors", iconNumber: 0, emoji: "🩷" },
-    { assetId: "dummy-11", name: "Rocket Icon", price: 900, category: "icons", iconNumber: 0, emoji: "🚀" },
-    { assetId: "dummy-12", name: "Galaxy Theme", price: 2500, category: "themes", iconNumber: 0, emoji: "🌌" },
-  ].filter(item => {
-    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
-
-  const allItems = [...filteredItems, ...dummyItems]
+  const allItems = filteredItems
 
 
   // handle
@@ -107,8 +147,8 @@ export const MarketSectionSuspense = () => {
   };
 
   const xpPackages: { amount: number; price: number; popular: boolean; lookup: "xp_500" | "xp_1200" | "xp_2500" | "xp_5500" | "xp_10000" | "xp_50000" }[] = [
-    { amount: 500, price: 1.99, popular: false, lookup: "xp_500" },
-    { amount: 1200, price: 3.99, popular: false, lookup: "xp_1200" },
+    { amount: 200, price: 0.99, popular: false, lookup: "xp_500" },
+    { amount: 500, price: 1.99, popular: false, lookup: "xp_1200" },
     { amount: 2500, price: 7.99, popular: true, lookup: "xp_2500" },
     { amount: 5500, price: 15.99, popular: false, lookup: "xp_5500" },
     { amount: 10000, price: 25.99, popular: false, lookup: "xp_10000" },
@@ -116,14 +156,8 @@ export const MarketSectionSuspense = () => {
   ]
 
   const categories = [
-    { id: "all", name: "All Items", icon: <Sparkles className="h-4 w-4" /> },
     { id: "icons", name: "Icons", icon: <Star className="h-4 w-4" /> },
-    { id: "badges", name: "Badges", icon: <BadgeCheck className="h-4 w-4" /> },
-    { id: "backgrounds", name: "Backgrounds", icon: <Palette className="h-4 w-4" /> },
-    { id: "effects", name: "Effects", icon: <Zap className="h-4 w-4" /> },
-    { id: "colors", name: "Colors", icon: <Palette className="h-4 w-4" /> },
-    { id: "frames", name: "Frames", icon: <Heart className="h-4 w-4" /> },
-    { id: "themes", name: "Themes", icon: <Sparkles className="h-4 w-4" /> },
+    { id: "titles", name: "Titles", icon: <Crown className="h-4 w-4" /> },
   ]
 
   // Add CSS animations to your global CSS or CSS-in-JS
@@ -170,7 +204,7 @@ export const MarketSectionSuspense = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 ml-16 relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground p-6 ml-16 relative overflow-hidden">
 
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -180,27 +214,31 @@ export const MarketSectionSuspense = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#ffca55] to-[#FFA100] bg-clip-text text-transparent">
               Marketplace
             </h1>
-            <p className="text-gray-400 mt-2">Personalize your profile with exclusive items</p>
+            <p className="text-muted-foreground mt-2">Personalize your profile with exclusive items</p>
           </div>
 
           <div className="flex items-center gap-4 mt-4 md:mt-0 relative">
-            <XpIndicator xp={userCoins} />
-            <Button
-              className="flex rounded-full bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 font-semibold hover:opacity-90"
-              onClick={() => setShowXpPopup(true)}
-            >
-              <Landmark className="h-4 w-4 mr-2" />
-              <span>Get More XP</span>
-            </Button>
+            {(user as any)?.accountType !== 'business' && (
+              <>
+                <XpIndicator xp={userCoins} />
+                <Button
+                  className="flex rounded-full bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 font-semibold hover:opacity-90"
+                  onClick={() => setShowXpPopup(true)}
+                >
+                  <Landmark className="h-4 w-4 mr-2" />
+                  <span>Get More XP</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
         {/* XP Popup Modal */}
         {showXpPopup && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1e1e1e] rounded-2xl border border-gray-700 max-w-md w-full max-h-[90vh] overflow-y-auto relative overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border max-w-md w-full max-h-[70vh] overflow-y-auto relative overflow-hidden scrollbar-hide">
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-700 relative">
+              <div className="flex items-center justify-between p-6 border-b border-border relative">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-[#ffca55] to-[#FFA100] bg-clip-text text-transparent">
                   Get More XP
                 </h2>
@@ -208,59 +246,65 @@ export const MarketSectionSuspense = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowXpPopup(false)}
-                  className="text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full transition-all"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-all"
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
 
               {/* Current Balance */}
-              <div className="p-6 border-b border-gray-700">
+              <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Current Balance:</span>
+                  <span className="text-muted-foreground">Current Balance:</span>
                   <div className="flex items-center gap-2">
-                    <Boxes className="h-5 w-5 text-purple-500" />
-                    <span className="text-xl font-bold">{Intl.NumberFormat("en").format(userCoins)} XP</span>
+                    <span className="text-sm font-bold text-purple-500">XP</span>
+                    <span className="text-xl font-bold">{Intl.NumberFormat("en").format(userCoins)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Free Option - Rewarded Ads */}
-              <div className="p-6 border-b border-gray-700">
+              <div className="p-6 border-b border-border">
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                   <Video className="h-5 w-5 text-blue-400" />
-                  Free XP - Watch Ads
+                  Free XP - Featured Videos
                 </h3>
-                <p className="text-gray-400 text-sm mb-4">
-                  Watch an ad to earn XP for free!
+                <p className="text-muted-foreground text-sm mb-4">
+                  Watch featured videos to earn XP for free!
                 </p>
-                <div className="flex items-center justify-between p-5 bg-[#252525] rounded-xl border-2 border-gray-700 hover:border-blue-500 transition-colors">
+                <div className="flex items-center justify-between p-5 bg-muted/50 rounded-xl border-2 border-border hover:border-blue-500 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-600/20 rounded-lg">
                       <Video className="h-6 w-6 text-blue-400" />
                     </div>
                     <div>
-                      <div className="font-semibold text-white text-base">Rewarded Ads</div>
-                      <div className="text-sm text-gray-400">
-                        {rewardedAdsEnabled ? "✓ Ads are active" : "Enable to watch ads"}
+                      <div className="font-semibold text-foreground text-base">Featured Videos</div>
+                      <div className="text-sm text-muted-foreground">
+                        {user?.rewardedAdsEnabled ? "✓ Ads are active" : "Enable to watch ads"}
                       </div>
                     </div>
                   </div>
                   <Switch
-                    checked={rewardedAdsEnabled}
-                    onCheckedChange={setRewardedAdsEnabled}
+                    checked={(user as any)?.accountType === 'business' ? true : (user?.rewardedAdsEnabled ?? false)}
+                    onCheckedChange={(checked) => toggleAds.mutate({ enabled: checked })}
+                    disabled={toggleAds.isPending || (user as any)?.accountType === 'business'}
                     className="data-[state=checked]:bg-blue-600 scale-125"
                   />
                 </div>
+                {(user as any)?.accountType === 'business' && (
+                  <p className="text-xs text-muted-foreground mt-2 ml-1">
+                    * Business accounts have Featured Videos permanently enabled.
+                  </p>
+                )}
               </div>
 
               {/* Paid Options */}
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <CreditCard className="h-5 w-5 text-green-400" />
-                  Buy XP Packages
+                  Buy XP (Future Implementation)
                 </h3>
-                <p className="text-gray-400 text-sm mb-4">
+                <p className="text-muted-foreground text-sm mb-4">
                   Get instant XP with these premium packages
                 </p>
 
@@ -270,13 +314,13 @@ export const MarketSectionSuspense = () => {
                       key={index}
                       className={`relative p-4 rounded-xl border-2 cursor-pointer ${pkg.popular
                         ? "border-purple-500 bg-gradient-to-r from-purple-700/10 to-purple-100/10"
-                        : "border-gray-600 bg-[#252525] hover:border-gray-500"
+                        : "border-border bg-muted/50 hover:border-muted-foreground"
                         }`}
                       onClick={() => handlePurchaseXp(pkg.lookup)}
                     >
                       {pkg.popular && (
                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                          <span className="bg-purple-500 text-gray-900 text-xs px-2 py-1 rounded-full font-semibold">
+                          <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                             MOST POPULAR
                           </span>
                         </div>
@@ -284,15 +328,15 @@ export const MarketSectionSuspense = () => {
 
                       <div className="flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-3">
-                          <Boxes className="h-6 w-6 text-purple-500" />
+                          <span className="text-lg font-bold text-purple-500">XP</span>
                           <div>
-                            <div className="font-semibold text-lg">{pkg.amount.toLocaleString()} XP</div>
-                            <div className="text-gray-400 text-sm">Instant delivery</div>
+                            <div className="font-semibold text-lg">{pkg.amount.toLocaleString()}</div>
+                            <div className="text-muted-foreground text-sm">Instant delivery</div>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="font-bold text-lg">${pkg.price}</div>
-                          <div className="text-gray-400 text-sm">
+                          <div className="text-muted-foreground text-sm">
                             ${(pkg.price / (pkg.amount / 1000)).toFixed(2)} per 1K XP
                           </div>
                         </div>
@@ -302,8 +346,8 @@ export const MarketSectionSuspense = () => {
                 </div>
 
                 {/* Security Note */}
-                <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />
                     <span>Secure payment processing. Your transaction is safe and encrypted.</span>
                   </div>
@@ -314,50 +358,25 @@ export const MarketSectionSuspense = () => {
         )}
 
         {/* Rest of your existing JSX remains the same, just add animation classes */}
-        {/* Search and Filter Section */}
-        <div className="bg-[#1e1e1e] rounded-xl border border-gray-800 p-4 mb-8 relative overflow-hidden">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-full bg-[#252525] border border-gray-700 focus:border-[#ffca55] focus:outline-none transition-all duration-300"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-400">Filter:</span>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="rounded-full bg-[#252525] border border-gray-700 text-white px-3 py-2 text-sm focus:border-[#ffca55] focus:outline-none transition-all duration-300"
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Category Chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
+        {/* Category Selection */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-muted/30 p-1.5 rounded-full inline-flex items-center border border-border/50">
             {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm ${selectedCategory === category.id
-                  ? "bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900"
-                  : "bg-[#252525] text-gray-300 hover:bg-[#2d2d2d]"
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${selectedCategory === category.id
+                  ? "bg-gradient-to-r from-[#ffca55] to-[#FFA100] text-gray-900 shadow-md scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
               >
                 {category.icon}
                 {category.name}
               </button>
             ))}
+            <div className="px-4 py-2 text-sm font-medium text-red-400 italic border-l border-border/50 ml-2 select-none">
+              More coming soon...
+            </div>
           </div>
         </div>
 
@@ -366,18 +385,18 @@ export const MarketSectionSuspense = () => {
           {allItems.map((item) => {
             const isOwned = owned(item.assetId);
             const isDummy = item.assetId.startsWith('dummy-');
-
+            const isTitle = item.category === "titles";
 
             return (
               <Card
                 key={item.assetId}
-                className="bg-[#1e1e1e] border border-gray-800 overflow-hidden group relative"
+                className="bg-card border border-border overflow-hidden group relative"
               >
                 <CardContent className="p-0">
                   {/* Item Image */}
-                  <div className="h-40 flex items-center justify-center bg-gradient-to-b from-[#2a2a2a] to-[#1e1e1e] relative">
-                    <span className="text-5xl">
-                      {isDummy ? (item as any).emoji : assetIcon.get(item.iconNumber)}
+                  <div className="h-40 flex items-center justify-center bg-gradient-to-b from-muted/50 to-card relative">
+                    <span className={isTitle ? `text-2xl font-bold text-center px-4 bg-gradient-to-r ${getTitleGradient(item.name)} bg-clip-text text-transparent` : "text-5xl"}>
+                      {isTitle ? item.name : (isDummy ? (item as any).emoji : assetIcon.get(item.iconNumber))}
                     </span>
 
                     {/* Owned Badge */}
@@ -396,11 +415,7 @@ export const MarketSectionSuspense = () => {
                     </h3>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        {item.price < 500 ? (
-                          <Box className="h-4 w-4 text-purple-400 mr-1" />
-                        ) : (
-                          <Boxes className="h-5 w-5 text-purple-600 mr-1" />
-                        )}
+                        <span className="text-xs font-bold text-purple-500 mr-1">XP</span>
                         <span className="font-semibold">{item.price}</span>
                       </div>
 
@@ -420,7 +435,7 @@ export const MarketSectionSuspense = () => {
                             </Button>
                           ) : (
                             <Button
-                              className="rounded-xl bg-[#333333] text-white text-sm font-semibold shadow-lg hover:shadow-[#ffca55] transition-all duration-300 hover:scale-105 hover:-translate-y-0.5"
+                              className="rounded-xl bg-black text-white hover:bg-black/80 text-sm font-semibold shadow-lg hover:shadow-[#ffca55] transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 border border-white/20"
                               onClick={() => handlePurchase(item.assetId, item.price)}
                             >
                               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -441,55 +456,12 @@ export const MarketSectionSuspense = () => {
         {
           allItems.length === 0 && (
             <div className="text-center py-16">
-              <Search className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold text-gray-300">No items found</h3>
-              <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
+              <Box className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-semibold text-foreground">No items found</h3>
+              <p className="text-muted-foreground mt-2">Try adjusting your filter criteria</p>
             </div>
           )
         }
-
-        {/* Featured Section */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Crown className="h-6 w-6 text-[#ffca55]" />
-            Featured Items
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl border border-purple-800 p-6 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
-              <div className="text-6xl">🌟</div>
-              <div>
-                <h3 className="text-xl font-bold">Premium Creator Pack</h3>
-                <p className="text-gray-300 mt-2">Get access to exclusive items and special features</p>
-                <div className="flex items-center mt-4">
-                  <Coins className="h-5 w-5 text-[#ffca55] mr-2" />
-                  <span className="font-semibold">2,500</span>
-                  <Button className="ml-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90">
-                    <Rocket className="h-4 w-4 mr-2" />
-                    Unlock Now
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl border border-blue-800 p-6 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
-              <div className="text-6xl">⚡</div>
-              <div>
-                <h3 className="text-xl font-bold">Weekly Special Offer</h3>
-                <p className="text-gray-300 mt-2">Limited time offer - 50% off on all effects</p>
-                <div className="flex items-center mt-4">
-                  <Boxes className="h-5 w-5 text-[#ffca55] mr-2" />
-                  <span className="font-semibold line-through text-gray-400">1,500</span>
-                  <span className="font-semibold ml-2">750</span>
-                  <Button className="ml-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Claim Offer
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div >
     </div >
   )

@@ -2,10 +2,20 @@
 
 import { Button } from "@/components/ui/button"
 import { ClapperboardIcon, UserCircle2Icon } from "lucide-react"
+import { User as RetroUser } from "@react95/icons"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 
 import { UserButton,SignInButton, SignedIn, SignedOut } from "@clerk/nextjs"
 
 export const AuthButton = () => {
+    const { theme } = useTheme()
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
     // TODO: add different auth states
     return (
         <>
@@ -28,7 +38,7 @@ export const AuthButton = () => {
                     variant='outline'
                     className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 border-blue-500/20 dark:border-blue-400/20 rounded-full shadow-none [&_svg]:size-5"
                 >
-                    <UserCircle2Icon />
+                    {mounted && theme === 'retro' ? <RetroUser variant="16x16_4" /> : <UserCircle2Icon />}
                     Sign In
                 </Button>
                 </SignInButton>

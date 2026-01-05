@@ -12,7 +12,6 @@ import { eq } from "drizzle-orm"
 
 
 export async function POST(req: Request) {
-    console.log("AAAA")
     const SIGNING_SECRET = process.env.CLERK_SIGNING_SECRET
 
     if (!SIGNING_SECRET) {
@@ -58,11 +57,20 @@ export async function POST(req: Request) {
     if (type === "user.created") {
         console.log("A new user was created with ID", data.id)
 
-        const name = `${data.first_name} ${data.last_name ?? ""}`.trim()
+        let name = `${data.first_name || ""} ${data.last_name || ""}`.trim()
+        if (!name) {
+            if (data.username && data.username.trim()) {
+                name = data.username
+            } else {
+                name = `Anonymous ${Math.floor(Math.random() * 100000)}`
+            }
+        }
+        name = name.substring(0, 50);
 
         await db.insert(users).values({
             clerkId: data.id,
             name: name,
+            username: data.username,
             imageUrl: data.image_url,
             // prueba: "", // Add a default value or set as needed
         }).catch((err) => {
@@ -89,9 +97,18 @@ export async function POST(req: Request) {
         if (!data.id) {
             return new Response("No user ID provided", { status: 400 })
         }
-        const name = `${data.first_name} ${data.last_name}`
+        let name = `${data.first_name || ""} ${data.last_name || ""}`.trim()
+        if (!name) {
+            if (data.username && data.username.trim()) {
+                name = data.username
+            } else {
+                name = `Anonymous ${Math.floor(Math.random() * 100000)}`
+            }
+        }
+        name = name.substring(0, 50);
         await db.update(users).set({
             name: name,
+            username: data.username,
             imageUrl: data.image_url
         }).where(eq(users.clerkId, data.id)).catch((err) => {
             console.log("Error updating user in database", err)

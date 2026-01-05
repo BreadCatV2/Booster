@@ -7,7 +7,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { SearchInput } from "./search-input";
 import { AuthButton } from "@/modules/auth/ui/components/auth-button";
 
-import { Tv2Icon,  Video } from "lucide-react";
+import { Tv2Icon,  Video, Upload } from "lucide-react";
+import { User as RetroUser, FileTransfer as RetroUpload } from "@react95/icons";
+import { useTheme } from "next-themes";
 import { trpc } from "@/trpc/client";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { XpIndicator } from "@/modules/xp/ui/components/xp-indicator";
@@ -32,7 +34,7 @@ const NavItem = ({
     return (
       <button
         onClick={() => clerk.openSignIn()}
-        className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors nav-item-button"
       >
         {children}
       </button>
@@ -41,7 +43,7 @@ const NavItem = ({
     return (
       <Link
         href={href}
-        className="px-2 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="px-2 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors nav-item-button"
       >
         {children}
       </Link>
@@ -50,10 +52,16 @@ const NavItem = ({
 };
 
 export const ExplorerNavBar = () => {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   // Simulate loading XP data
   useEffect(() => {
@@ -97,11 +105,11 @@ export const ExplorerNavBar = () => {
     >
       <div className="flex items-center justify-between w-full">
         {/* Menu and logo */}
-        <div className="flex items-center flex-shrink-0 z-50">
+        <div className={`flex items-center flex-shrink-0 z-50 ${isMobileSearchOpen ? 'hidden sm:flex' : 'flex'}`}>
           <SidebarTrigger />
           <Link
             href="/"
-            className="flex items-center p-2 rounded-md hover:bg-muted transition-colors"
+            className="flex items-center p-2 rounded-md hover:bg-muted transition-colors nav-logo-link"
           >
             <div className="flex items-center">
               {/*<Image
@@ -116,37 +124,39 @@ export const ExplorerNavBar = () => {
                 alt="Booster"
                 width={150}
                 height={30}
-                className="hidden sm:block"
+                className="hidden sm:block no-border"
               />
             </div>
           </Link>
         </div>
 
         {/* Search bar */}
-        <div className="flex-1 flex justify-start max-w-[600px] mx-4 sm:ml-[12rem]">
-          <SearchInput />
+        <div className={`flex-1 flex justify-start max-w-[600px] mx-4 sm:ml-[12rem] ${isMobileSearchOpen ? 'w-full ml-0 max-w-full mx-0' : ''}`}>
+          <SearchInput isMobileSearchOpen={isMobileSearchOpen} setIsMobileSearchOpen={setIsMobileSearchOpen} />
         </div>
 
         {/* XP indicator + right controls */}
-        <div className="flex-shrink-0 items-center flex gap-3">
+        <div className={`flex-shrink-0 items-center flex gap-3 ${isMobileSearchOpen ? 'hidden sm:flex' : 'flex'}`}>
           {/* Desktop navigation */}
 
           <NavItem clerk={clerk} userId={userId} href={`/users/${userId}`}>
             <div className="flex items-center gap-2">
-              <Tv2Icon className="size-4" />
-              My Channel
+              {mounted && theme === 'retro' ? <RetroUser variant="32x32_4" /> : <Tv2Icon className="size-4" />}
+              <span className="hidden sm:block">My Channel</span>
             </div>
           </NavItem>
 
-          <NavItem clerk={clerk} userId={userId} href="/studio">
-            <div className="flex items-center gap-1">
-              <Video className="size-5" />
-              
+          <NavItem clerk={clerk} userId={userId} href="/studio?create=true">
+            <div className="flex items-center gap-2">
+              {mounted && theme === 'retro' ? <RetroUpload width={32} height={32} /> : <Upload className="size-4" />}
+              <span className="hidden sm:block">Create</span>
             </div>
           </NavItem>
 
           <NotificationBell />
-          <XpIndicator xp={myXp?.xp || 0} isLoading={isLoading} />
+          {user?.accountType !== 'business' && (
+            <XpIndicator xp={myXp?.xp || 0} isLoading={isLoading} />
+          )}
           <AuthButton />
         </div>
       </div>
