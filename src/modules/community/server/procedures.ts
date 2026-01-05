@@ -2,7 +2,7 @@ import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init
 import { db } from "@/db";
 import { userFollows, users, assets, communities, communityMembers, communityModerators, videos } from "@/db/schema";
 import { z } from "zod";
-import { and, eq, inArray, desc, lt, count, getTableColumns } from "drizzle-orm";
+import { and, eq, inArray, desc, lt, count, getTableColumns, not } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createClient } from "@supabase/supabase-js";
 import { UTApi } from "uploadthing/server";
@@ -512,7 +512,8 @@ export const communityRouter = createTRPCRouter({
           and(
             eq(videos.communityId, communityId),
             cursor ? lt(videos.createdAt, new Date(cursor)) : undefined,
-            eq(videos.visibility, "public")
+            eq(videos.visibility, "public"),
+            not(eq(videos.status,"processing"))
           )
         )
         .limit(limit + 1)
