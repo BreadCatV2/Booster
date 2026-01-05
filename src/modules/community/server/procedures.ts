@@ -8,6 +8,8 @@ import { createClient } from "@supabase/supabase-js";
 import { UTApi } from "uploadthing/server";
 import { COMMUNITY_CREATION_LIMIT } from "@/constants";
 
+import { messageRateLimit } from "@/lib/ratelimit";
+
 const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
     ? createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -705,6 +707,15 @@ export const communityRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { channelId, content } = input;
       const userId = ctx.user.id;
+
+      const { success } = await messageRateLimit.limit(userId);
+
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "You are sending messages too fast",
+        });
+      }
 
       if (!supabaseAdmin) {
         throw new TRPCError({
