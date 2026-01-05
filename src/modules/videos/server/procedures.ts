@@ -477,7 +477,7 @@ export const videosRouter = createTRPCRouter({
 
   update: protectedProcedure
     .input(videoUpdateSchema.extend({
-      title: z.string().min(1).max(100).optional(),
+      title: z.string().min(1).max(200).optional(),
       description: z.string().max(5000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {

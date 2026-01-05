@@ -13,28 +13,7 @@ export const usersRouter = createTRPCRouter({
     .query(async ({input}) => {
         const {clerkId} = input;
         const [user] = await db
-        .select({
-            id: users.id,
-            clerkId: users.clerkId,
-            name: users.name,
-            username: users.username,
-            imageUrl: users.imageUrl,
-            createdAt: users.createdAt,
-            about: users.about,
-            instagram: users.instagram,
-            twitter: users.twitter,
-            youtube: users.youtube,
-            tiktok: users.tiktok,
-            discord: users.discord,
-            website: users.website,
-            xp: users.xp,
-            boostPoints: users.boostPoints,
-            equippedAssetId: users.equippedAssetId,
-            equippedTitleId: users.equippedTitleId,
-            accountType: users.accountType,
-            businessDescription: users.businessDescription,
-            businessImageUrls: users.businessImageUrls,
-        })
+        .select()
         .from(users)
         .where(inArray(users.clerkId, clerkId ? [clerkId] : []));
         
@@ -55,29 +34,7 @@ export const usersRouter = createTRPCRouter({
         const {userId} = input;
 
         const [user] = await db
-        .select({
-            id: users.id,
-            clerkId: users.clerkId,
-            name: users.name,
-            username: users.username,
-            imageUrl: users.imageUrl,
-            createdAt: users.createdAt,
-            about: users.about,
-            instagram: users.instagram,
-            twitter: users.twitter,
-            youtube: users.youtube,
-            tiktok: users.tiktok,
-            discord: users.discord,
-            website: users.website,
-            xp: users.xp,
-            boostPoints: users.boostPoints,
-            equippedAssetId: users.equippedAssetId,
-            equippedTitleId: users.equippedTitleId,
-            accountType: users.accountType,
-            businessDescription: users.businessDescription,
-            businessImageUrls: users.businessImageUrls,
-            // Exclude sensitive tokens
-        })
+        .select()
         .from(users)
         .where(inArray(users.id, userId ? [userId] : []));
 
@@ -273,7 +230,6 @@ export const usersRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { enabled } = input;
       const userId = ctx.user.id;
-
       // Check if user is business account
       const [user] = await db
         .select()
