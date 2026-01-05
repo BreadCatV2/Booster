@@ -18,7 +18,8 @@ export const studioRouter = createTRPCRouter({
 
     getOne: protectedProcedure
         .input(z.object({ id: z.string().uuid() }))
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            const userId = ctx.user.id;
 
 
             const [video] = await db
@@ -27,7 +28,8 @@ export const studioRouter = createTRPCRouter({
                     views: sql<number>`(SELECT count(*) FROM ${videoViews} WHERE ${videoViews.videoId} = ${videos.id})`.mapWith(Number),
                 })
                 .from(videos)
-                .where(eq(videos.id, input.id));
+                .where(and(eq(videos.id, input.id), eq(videos.userId, userId)));
+            
             if (!video) {
                 throw new TRPCError({ code: "NOT_FOUND" })
             }
