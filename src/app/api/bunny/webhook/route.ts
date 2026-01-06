@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     where: and(eq(videos.bunnyVideoId, videoId)),
   });
 
-  if (!video || video.status !== "created") return new Response("Forbidden", { status: 403 });
+  if (!video || video.status === "completed") return new Response("Forbidden", { status: 403 });
 
   // Only act when the video is processed/ready
 
