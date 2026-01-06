@@ -27,6 +27,9 @@ function cdnUrl(path: string) {
 
 /** Fetch video details from Bunny (to get thumbnail file name, length, etc.) */
 async function getBunnyVideo(libraryId: string, videoId: string) {
+
+
+
   const r = await fetch(
     `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
     {
@@ -49,7 +52,16 @@ async function getBunnyVideo(libraryId: string, videoId: string) {
   }>;
 }
 
-export async function POST(req: Request) {
+export async function POST( req: Request, { params }: { params: { token: string } }) {
+
+
+
+  //TODO: verify bunny is sending this webhook -> DONE
+  if (params.token !== process.env.BUNNY_WEBHOOK_SECRET) {
+    return new Response("Not found", { status: 404 });
+  }
+  
+  
   // Bunny sends JSON when a video status changes.
   const payload = await req.json().catch(() => ({} as any));
 
@@ -72,7 +84,6 @@ export async function POST(req: Request) {
   }
 
 
-  //TODO: verify bunny is sending this webhook
 
   const video = await db.query.videos.findFirst({
     where: and(eq(videos.bunnyVideoId, videoId)),
