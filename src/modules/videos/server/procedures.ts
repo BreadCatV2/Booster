@@ -690,9 +690,9 @@ export const videosRouter = createTRPCRouter({
   createAfterUpload: protectedProcedure
     .input(
       z.object({
-        bunnyVideoId: z.string(), // Bunny GUID just uploaded to
-        title: z.string().min(1),
-        description: z.string().optional(),
+        bunnyVideoId: z.string().uuid(), // Bunny GUID just uploaded to
+        title: z.string().min(1).max(200),
+        description: z.string().max(5000).optional(),
         categoryId: z.string().uuid().optional(),
       })
     )

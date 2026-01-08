@@ -202,7 +202,7 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
       utils.studio.getMany.invalidate();
       utils.studio.getOne.invalidate({ id: videoId });
       toast.success("Video details updated successfully!");
-      
+
     },
     onError: (error) => {
       toast.error(error.message || "Something went wrong while updating.");
@@ -255,9 +255,8 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
     update.mutateAsync(data);
   };
 
-  const fullUrl = `${
-    process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000"
-  }/videos/${videoId}`;
+  const fullUrl = `${process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000"
+    }/videos/${videoId}`;
   const [isCopied, setIsCopied] = useState(false);
 
   const onCopy = async () => {
@@ -333,12 +332,13 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                     <FormItem>
                       <FormLabel className="text-base font-medium text-gray-800 dark:text-white flex items-center justify-between">
                         Title
-                        
+
                       </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           placeholder="Add an engaging title for your video"
+                          maxLength={200}
                           className="h-12 text-base rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </FormControl>
@@ -357,13 +357,14 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                     <FormItem>
                       <FormLabel className="text-base font-medium text-gray-800 dark:text-white flex items-center justify-between">
                         Description
-                       
+
                       </FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
                           value={field.value ?? ""}
                           rows={8}
+                          maxLength={5000}
                           className="resize-none rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                           placeholder="Describe your video to help viewers understand what it's about"
                         />
@@ -753,13 +754,12 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                       </p>
                       <div className="flex items-center">
                         <div
-                          className={`h-2 w-2 rounded-full mr-2 ${
-                            video.status === "completed"
+                          className={`h-2 w-2 rounded-full mr-2 ${video.status === "completed"
                               ? "bg-green-500"
                               : video.status === "processing"
-                              ? "bg-yellow-500"
-                              : "bg-gray-500"
-                          }`}
+                                ? "bg-yellow-500"
+                                : "bg-gray-500"
+                            }`}
                         ></div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {snakeCaseToTitle(video.status || "Preparing")}
@@ -773,13 +773,12 @@ const FormSectionSuspense = ({ videoId }: PageProps) => {
                       </p>
                       <div className="flex items-center">
                         <div
-                          className={`h-2 w-2 rounded-full mr-2 ${
-                            video.status === "completed"
+                          className={`h-2 w-2 rounded-full mr-2 ${video.status === "completed"
                               ? "bg-green-500"
                               : video.status === "processing"
-                              ? "bg-yellow-500"
-                              : "bg-gray-500"
-                          }`}
+                                ? "bg-yellow-500"
+                                : "bg-gray-500"
+                            }`}
                         ></div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {"No Subtitles"}
