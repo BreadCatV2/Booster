@@ -764,25 +764,7 @@ export const videosRouter = createTRPCRouter({
 
       const [creator] = await db
         .with(viewerFollow)
-        .select({
-          id: users.id,
-          clerkId: users.clerkId,
-          name: users.name,
-          username: users.username,
-          imageUrl: users.imageUrl,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          about: users.about,
-          xp: users.xp,
-          boostPoints: users.boostPoints,
-          newLevelUpgrade: users.newLevelUpgrade,
-          accountType: users.accountType,
-          followsCount:
-            sql<number>` (SELECT COUNT(*) FROM ${userFollows} WHERE ${userFollows.creatorId} = ${users.id}) `.mapWith(
-              Number
-            ),
-          viewerIsFollowing: isNotNull(viewerFollow.userId).mapWith(Boolean),
-        })
+        .select()
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id))
         .leftJoin(viewerFollow, eq(viewerFollow.creatorId, users.id))
