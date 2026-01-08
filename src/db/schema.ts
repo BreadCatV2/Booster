@@ -41,11 +41,12 @@ export const users = pgTable("users", {
     dailyWatchCount: integer("daily_watch_count").default(0).notNull(),
     lastDailyXpReset: timestamp("last_daily_xp_reset").defaultNow().notNull(),
 
+    //TODO: Future implementation -> remebert 
     // YouTube Sync
-    youtubeAccessToken: text("youtube_access_token"),
-    youtubeRefreshToken: text("youtube_refresh_token"),
-    youtubeTokenExpiry: timestamp("youtube_token_expiry"),
-    youtubeChannelId: text("youtube_channel_id"),
+    // youtubeAccessToken: text("youtube_access_token"),
+    // youtubeRefreshToken: text("youtube_refresh_token"),
+    // youtubeTokenExpiry: timestamp("youtube_token_expiry"),
+    // youtubeChannelId: text("youtube_channel_id"),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
 
 //create index on clerk_id to query faster. --> speed up WHERE, JOIN, ORDER BY clauses. B-Tree sorted by the column I index

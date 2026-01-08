@@ -33,6 +33,7 @@ import {
   lt,
   not,
   or,
+  arrayOverlaps,
 } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { mux } from "@/lib/mux";
@@ -279,6 +280,11 @@ export const videosRouter = createTRPCRouter({
         .groupBy(comments.videoId)
         .as("ca");
 
+      const tagsOverlapExpr =
+        currentTags && currentTags.length > 0
+          ? arrayOverlaps(videos.tags, currentTags)
+          : sql`false`;
+
       //TODO: add time factor -> older videos get subtracted? Or recent are more valuable
       const scoreExpr = sql<number>`
                             (
@@ -297,7 +303,7 @@ export const videosRouter = createTRPCRouter({
                             + (20 * LN(COALESCE(${userCategoryAffinity.affinityScore}, 0) + 1))
                             + (CASE WHEN ${videos.categoryId} = ${currentCategoryId ?? null} THEN 50 ELSE 0 END)
                             + (CASE WHEN ${currentEmbedding ? sql`(${videos.embedding} <=> ${JSON.stringify(currentEmbedding)}::vector)` : sql`1`} < 0.5 THEN 100 ELSE 0 END)
-                            + (CASE WHEN ${currentTags && currentTags.length > 0 ? sql`${videos.tags} && ${sql.raw(`'{${currentTags.join(',')}}'`)}` : sql`false`} THEN 50 ELSE 0 END)
+                            + (CASE WHEN ${tagsOverlapExpr} THEN 50 ELSE 0 END)
                             + (COALESCE(${collaborativeMatch.matchCount}, 0) * 20)
                     `;
 
