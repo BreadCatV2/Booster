@@ -170,8 +170,6 @@ export const videos = pgTable("videos", {
 
     isFeatured: boolean("is_featured").default(false),
 
-    s3Name: text("s3_name").notNull(),
-
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 

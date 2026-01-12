@@ -502,36 +502,36 @@ export const videosRouter = createTRPCRouter({
         }
       }
 
-      const upload_key = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}`; // unique key
+      // const upload_key = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}`; // unique key
 
-      console.log("upload_key", upload_key);
+      // console.log("upload_key", upload_key);
 
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: process.env.AWS_S3_UPLOAD_BUCKET!,
-          Key: upload_key,
-        })
-      );
+      // await s3.send(
+      //   new DeleteObjectCommand({
+      //     Bucket: process.env.AWS_S3_UPLOAD_BUCKET!,
+      //     Key: upload_key,
+      //   })
+      // );
 
-      const prefix = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}/`;
+      // const prefix = `videos/${removedVideo.id}_${removedVideo.userId}_${removedVideo.s3Name}/`;
 
-      const list = await s3.send(
-        new ListObjectsV2Command({
-          Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
-          Prefix: prefix,
-        })
-      );
+      // const list = await s3.send(
+      //   new ListObjectsV2Command({
+      //     Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
+      //     Prefix: prefix,
+      //   })
+      // );
 
-      if (list.Contents && list.Contents.length > 0) {
-        await s3.send(
-          new DeleteObjectsCommand({
-            Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
-            Delete: {
-              Objects: list.Contents.map((obj) => ({ Key: obj.Key! })),
-            },
-          })
-        );
-      }
+      // if (list.Contents && list.Contents.length > 0) {
+      //   await s3.send(
+      //     new DeleteObjectsCommand({
+      //       Bucket: process.env.AWS_S3_PROCESSED_VIDEOS_BUCKET!,
+      //       Delete: {
+      //         Objects: list.Contents.map((obj) => ({ Key: obj.Key! })),
+      //       },
+      //     })
+      //   );
+      // }
       return removedVideo;
     }),
 
@@ -765,7 +765,6 @@ export const videosRouter = createTRPCRouter({
           bunnyVideoId: input.bunnyVideoId,
           bunnyLibraryId: process.env.BUNNY_STREAM_LIBRARY_ID!,
           bunnyStatus: "uploaded", // webhook will flip to "ready"
-          s3Name: "a",
           isAi: false,
           isFeatured: accountType === "business",
         })

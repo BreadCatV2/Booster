@@ -50,16 +50,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: await r.text() }, { status: r.status });
   const json = await r.json(); //video id is on guid
 
-  await db.insert(videos).values({
-    userId,
-    status: "created", // or "completed", depending on your schema
-    title,
-    s3Name: "a",
-    isAi: false,
-    isFeatured: false,
-    bunnyVideoId: json.guid,
-    // Add only properties that exist in your videos schema
-  });
+  // await db.insert(videos).values({
+  //   userId,
+  //   status: "created", 
+  //   title,
+  //   s3Name: "a",
+  //   isAi: false,
+  //   isFeatured: false,
+  //   bunnyVideoId: json.guid,
+  //   
+  // });
 
   return NextResponse.json(json);
 }

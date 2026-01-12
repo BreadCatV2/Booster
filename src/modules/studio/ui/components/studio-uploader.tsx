@@ -19,28 +19,28 @@ export const StudioUploader = () => {
     const createAfterUpload = trpc.videos.createAfterUpload.useMutation({
         onSuccess: async (data) => {
 
-            videoId = data.id;
-            utils.studio.getMany.invalidate({ limit: DEFAULT_LIMIT })
-            router.push(`/studio/videos/${videoId}`)
+            // videoId = data.id;
+            // utils.studio.getMany.invalidate({ limit: DEFAULT_LIMIT })
+            // router.push(`/studio/videos/${videoId}`)
 
 
-            const { uploadUrl, fileUrl, thumbnailUrl } = await getPresignedUrl({
-                videoId,
-                fileName: data.s3Name,
-            });
-            updateVideoUrl.mutate({ fileUrl, videoId, thumbnailUrl })
+            // const { uploadUrl, fileUrl, thumbnailUrl } = await getPresignedUrl({
+            //     videoId,
+            //     // fileName: data.s3Name,
+            // });
+            // updateVideoUrl.mutate({ fileUrl, videoId, thumbnailUrl })
 
-            await fetch(uploadUrl, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "video/mp4",
-                },
-                body: file,
-            });
+            // await fetch(uploadUrl, {
+            //     method: "PUT",
+            //     headers: {
+            //         "Content-Type": "video/mp4",
+            //     },
+            //     body: file,
+            // });
 
 
-            setState({ file, progress: 100, uploading: true });
-            toast.success(`Uploadede to the server. Processing video `);
+            // setState({ file, progress: 100, uploading: true });
+            // toast.success(`Uploadede to the server. Processing video `);
 
         }
     });
