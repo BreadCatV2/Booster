@@ -15,7 +15,20 @@ echo "╚═══════════════════════�
 echo ""
 
 # ============================================================================
-# 1. Display Environment Info
+# 1. Ensure we're on the dev-local branch
+# ============================================================================
+echo "🌿 Checking branch..."
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "dev-local" ]; then
+    echo "   Switching from '$CURRENT_BRANCH' to 'dev-local'..."
+    git fetch origin dev-local 2>/dev/null || true
+    git checkout dev-local 2>/dev/null || git checkout -b dev-local origin/dev-local
+fi
+echo "✅ On branch: $(git branch --show-current)"
+echo ""
+
+# ============================================================================
+# 2. Display Environment Info
 # ============================================================================
 echo "📋 Environment Information:"
 echo "   Node.js: $(node -v)"
