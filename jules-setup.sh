@@ -15,20 +15,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # ============================================================================
-# 1. Ensure we're on the dev-local branch
-# ============================================================================
-echo "🌿 Checking branch..."
-CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" != "dev-local" ]; then
-    echo "   Switching from '$CURRENT_BRANCH' to 'dev-local'..."
-    git fetch origin dev-local 2>/dev/null || true
-    git checkout dev-local 2>/dev/null || git checkout -b dev-local origin/dev-local
-fi
-echo "✅ On branch: $(git branch --show-current)"
-echo ""
-
-# ============================================================================
-# 2. Display Environment Info
+# Display Environment Info
 # ============================================================================
 echo "📋 Environment Information:"
 echo "   Node.js: $(node -v)"
@@ -37,7 +24,7 @@ echo "   Bun: $(bun -v 2>/dev/null || echo 'not installed')"
 echo ""
 
 # ============================================================================
-# 2. Install Bun (if not available)
+# Install Bun (if not available)
 # ============================================================================
 if ! command -v bun &> /dev/null; then
     echo "📦 Installing Bun..."
@@ -51,7 +38,7 @@ fi
 echo ""
 
 # ============================================================================
-# 3. Install PostgreSQL 16 with pgvector extension (Direct Installation)
+# Install PostgreSQL 16 with pgvector extension (Direct Installation)
 # ============================================================================
 echo "🐘 Setting up PostgreSQL 16 with pgvector..."
 
@@ -93,7 +80,7 @@ fi
 echo ""
 
 # ============================================================================
-# 4. Create Environment File for Local Development
+# Create Environment File for Local Development
 # ============================================================================
 echo "📝 Creating .env.local for local development..."
 
@@ -151,7 +138,7 @@ fi
 echo ""
 
 # ============================================================================
-# 5. Install Node.js Dependencies
+# Install Node.js Dependencies
 # ============================================================================
 echo "📦 Installing Node.js dependencies..."
 bun install --frozen-lockfile 2>/dev/null || bun install
@@ -159,7 +146,7 @@ echo "✅ Dependencies installed"
 echo ""
 
 # ============================================================================
-# 6. Setup Database Schema
+# Setup Database Schema
 # ============================================================================
 echo "🗃️  Pushing database schema..."
 bunx drizzle-kit push 2>/dev/null || npx drizzle-kit push
@@ -167,7 +154,7 @@ echo "✅ Database schema pushed"
 echo ""
 
 # ============================================================================
-# 7. Seed Local Development Data
+# Seed Local Development Data
 # ============================================================================
 echo "🌱 Seeding local development data..."
 bun run src/scripts/setup-local-db.ts 2>/dev/null || true
@@ -175,14 +162,14 @@ echo "✅ Local development data seeded"
 echo ""
 
 # ============================================================================
-# 8. Run Linting/Type Check
+# Run Linting/Type Check
 # ============================================================================
 echo "🔍 Running lint check..."
 bun run lint 2>/dev/null || npm run lint || echo "⚠️  Lint check had warnings"
 echo ""
 
 # ============================================================================
-# 9. Verify Setup
+# Verify Setup
 # ============================================================================
 echo "✅ Verifying setup..."
 echo "   Database connection: $(pg_isready && echo 'OK' || echo 'FAILED')"
