@@ -29,18 +29,10 @@ const mockAliases = IS_LOCAL_DEV ? {
 const dbMockPath = toPosix(path.join(mocksDir, 'db-shim.ts'));
 
 const nextConfig: NextConfig = {
+    transpilePackages: ["@uploadthing/react", "uploadthing"],
     typescript: {
         ignoreBuildErrors: true,
     },
-    
-    // Increase body size limit for video uploads
-    experimental: {
-        serverActions: {
-            bodySizeLimit: '100mb',
-        },
-    },
-    
-    // Note: eslint config moved to eslint.config.mjs in Next.js 15+
     images: {
         // Either use domains:
         // domains: ["images.unsplash.com", "image.mux.com", "assets.mux.com"],

@@ -41,11 +41,12 @@ export const users = pgTable("users", {
     dailyWatchCount: integer("daily_watch_count").default(0).notNull(),
     lastDailyXpReset: timestamp("last_daily_xp_reset").defaultNow().notNull(),
 
+    //TODO: Future implementation -> remebert 
     // YouTube Sync
-    youtubeAccessToken: text("youtube_access_token"),
-    youtubeRefreshToken: text("youtube_refresh_token"),
-    youtubeTokenExpiry: timestamp("youtube_token_expiry"),
-    youtubeChannelId: text("youtube_channel_id"),
+    // youtubeAccessToken: text("youtube_access_token"),
+    // youtubeRefreshToken: text("youtube_refresh_token"),
+    // youtubeTokenExpiry: timestamp("youtube_token_expiry"),
+    // youtubeChannelId: text("youtube_channel_id"),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
 
 //create index on clerk_id to query faster. --> speed up WHERE, JOIN, ORDER BY clauses. B-Tree sorted by the column I index
@@ -141,7 +142,7 @@ export const videos = pgTable("videos", {
     previewKey: text("preview_key"),
 
     bunnyVideoId: text("bunny_video_id").unique(),        
-    bunnyLibraryId: text("bunny_library_id"),             
+    // bunnyLibraryId: text("bunny_library_id"),             
     bunnyStatus: text("bunny_status"),                    
     bunnyDuration: integer("bunny_duration"),             
 
@@ -169,13 +170,11 @@ export const videos = pgTable("videos", {
 
     isFeatured: boolean("is_featured").default(false),
 
-    s3Name: text("s3_name").notNull(),
-
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 
     isAi: boolean("is_ai").notNull().default(false),
-    embedding: vector("embedding", { dimensions: 1536 } ), // OpenAI text-embedding-ada-002 dimension is 1536
+    // embedding: vector("embedding", { dimensions: 1536 } ), // OpenAI text-embedding-ada-002 dimension is 1536
     tags: text("tags").array(),
 
     commentCount: integer("comment_count").default(0).notNull(),

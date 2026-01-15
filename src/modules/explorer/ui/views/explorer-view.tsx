@@ -1,7 +1,7 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
 import { CategoriesSection } from "../sections/categories-section";
-import { Play, Eye, ArrowRight, StarIcon, Calendar1, RocketIcon } from "lucide-react";
+import { Play, Eye, ArrowRight, StarIcon, Calendar1, RocketIcon, Settings } from "lucide-react";
 import { useState, useMemo, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
@@ -14,6 +14,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ErrorBoundary } from "react-error-boundary";
 import { useAuth } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 
 import { UserIcon } from "@/modules/market/components/assetIcons/functions/get-user-icons";
 import { WelcomeBonusModal } from "@/modules/xp/ui/components/welcome-bonus-modal";
@@ -191,17 +192,21 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
         };
     }, [isAiMode, aiQuery]);
 
-    const [data, query] = (
-        isAiMode
-            ? trpc.explorer.aiSearch.useSuspenseInfiniteQuery(
-                { text: aiQuery || "", limit: 30 },
-                { getNextPageParam: (lastPage) => lastPage.nextCursor }
-            )
-            : trpc.explorer.getMany.useSuspenseInfiniteQuery(
+    // const [data, query] = (
+    //     isAiMode
+    //         ? trpc.explorer.aiSearch.useSuspenseInfiniteQuery(
+    //             { text: aiQuery || "", limit: 30 },
+    //             { getNextPageParam: (lastPage) => lastPage.nextCursor }
+    //         )
+    //         : trpc.explorer.getMany.useSuspenseInfiniteQuery(
+    //             { limit: 30, categoryId },
+    //             { getNextPageParam: (lastPage) => lastPage.nextCursor }
+    //         )
+    // ) as any;
+
+    const [data,query] = trpc.explorer.getMany.useSuspenseInfiniteQuery(
                 { limit: 30, categoryId },
-                { getNextPageParam: (lastPage) => lastPage.nextCursor }
-            )
-    ) as any;
+                { getNextPageParam: (lastPage) => lastPage.nextCursor }) as any
 
     const videos = useMemo(() => {
         if (!data) return [];
@@ -451,7 +456,14 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                             transition={{ delay: 0.4, duration: 0.7 }}
                             className="relative mt-0"
                         >
-
+                            <div className="flex justify-end mb-4 px-1">
+                                <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground gap-2 h-8">
+                                    <Link href="/settings">
+                                        <Settings className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium">Customize Feed</span>
+                                    </Link>
+                                </Button>
+                            </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                                 {verticalVideos.slice(0, 6).map((video: any) => (
@@ -558,17 +570,12 @@ export const ExplorerViewSuspense = ({ categoryId }: HomeViewProps) => {
                             </div>
 
                             <Link href="/next-up" className="relative group">
-                                {/* Hover glow effect */}
-                                <div className="absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 bg-[#ffca55] transition-opacity duration-500 pointer-events-none -z-10" />
-
-                                <motion.button
-                                    whileHover={{ x: 5, scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-3 bg-[#212121] text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 group"
+                                <Button
+                                    className="flex items-center gap-3  btn-primary py-2 px-3 rounded-lg font-semibold shadow-lg"
                                 >
                                     <span>Next up Page</span>
-                                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                                </motion.button>
+                                    <ArrowRight className="size-4" />
+                                </Button>
                             </Link>
                         </div>
 

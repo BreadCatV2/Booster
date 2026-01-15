@@ -28,13 +28,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   //verify ownership of the video by the logged in user
-  const video = await db.query.videos.findFirst({
-    where: and(eq(videos.bunnyVideoId, videoId), eq(videos.userId, userId)),
-  });
+  // const video = await db.query.videos.findFirst({
+  //   where: and(eq(videos.bunnyVideoId, videoId), eq(videos.userId, userId)),
+  // });
 
-  if (!video) return new Response("Forbidden", { status: 403 });
+  // if (!video) return new Response("Forbidden", { status: 403 });
 
-  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID!;
+  const libraryId = process.env.NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID!;
   const apiKey = process.env.BUNNY_STREAM_API_KEY!;
 
   const expires = Math.floor(Date.now() / 1000) + 10 * 60; // 10 minutes por poner algo xD
