@@ -215,3 +215,12 @@ echo "║    - Video streaming (Bunny/Mux)                                 ║"
 echo "║    - Rate limiting (Upstash)                                     ║"
 echo "║    - File uploads (UploadThing)                                  ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
+
+# ============================================================================
+# Clean up git working tree (required by Jules)
+# ============================================================================
+echo ""
+echo "🧹 Cleaning git working tree for Jules..."
+git checkout -- . 2>/dev/null || true
+git clean -fd 2>/dev/null || true
+echo "✅ Working tree is clean"
