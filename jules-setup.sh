@@ -15,7 +15,27 @@ echo "╚═══════════════════════�
 echo ""
 
 # ============================================================================
-# Display Environment Info
+# 1. Switch to dev-local branch (handles shallow clone)
+# ============================================================================
+echo "🌿 Switching to dev-local branch..."
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+echo "   Current branch: $CURRENT_BRANCH"
+
+if [ "$CURRENT_BRANCH" != "dev-local" ]; then
+    # Fetch the dev-local branch with enough depth
+    git fetch --depth=1 origin dev-local:dev-local 2>/dev/null || true
+    
+    # Try to checkout, if it fails create from FETCH_HEAD
+    if ! git checkout dev-local 2>/dev/null; then
+        echo "   Creating local dev-local branch from origin..."
+        git checkout -b dev-local FETCH_HEAD 2>/dev/null || git checkout -B dev-local origin/dev-local
+    fi
+fi
+echo "✅ On branch: $(git branch --show-current)"
+echo ""
+
+# ============================================================================
+# 2. Display Environment Info
 # ============================================================================
 echo "📋 Environment Information:"
 echo "   Node.js: $(node -v)"
