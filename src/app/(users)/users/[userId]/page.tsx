@@ -1,7 +1,7 @@
 import { UsersView } from "@/modules/users/views/users-view";
 import { HydrateClient, trpc } from "@/trpc/server";
 
-export const dynamic = 'force-dynamic'; //IMPORTANT: WE DON'T AWAIT. BUT RATHER WE PREFETCH
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
     params: Promise<{ userId: string }>;
@@ -11,12 +11,17 @@ interface PageProps {
 const Page = async ({ params }: PageProps) => {
     const { userId } = await params; //To get the video ID in the route. The folder should be called [videoId] the same as the variable name
 
-    // TODO: create a separate prefetch to get videos from user to parallelize things
-    void trpc.users.getByUserId.prefetch({ userId});
-    void trpc.users.getVideosByUserId.prefetch({ userId});
-    void trpc.xp.getXpByUserId.prefetch({userId})
-    void trpc.follows.getFollowersByUserId.prefetch({userId})
-    void trpc.videoViews.getAllViewsByUserId.prefetch({userId})
+    // Parallelize prefetches:
+    // Fire and forget for videos to avoid blocking the initial render if it's slow
+    void trpc.users.getVideosByUserId.prefetch({ userId });
+
+    // Await the essential data to ensure SSR for the profile info
+    await Promise.all([
+        trpc.users.getByUserId.prefetch({ userId }),
+        trpc.xp.getXpByUserId.prefetch({ userId }),
+        trpc.follows.getFollowersByUserId.prefetch({ userId }),
+        trpc.videoViews.getAllViewsByUserId.prefetch({ userId })
+    ]);
 
 
     return (
