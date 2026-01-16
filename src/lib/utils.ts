@@ -12,10 +12,13 @@ export const formatDuration = (duration: number) => {
   return `${minutes.toString().padStart(2, "0")}:${second.toString().padStart(2, "0")}`
 }
 
-export const snakeCaseToTitle = (str: string) => {
-  return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+const SNAKE_CASE_REGEX = /_/g;
+const CAPITALIZE_REGEX = /\b\w/g;
 
+export const snakeCaseToTitle = (str: string) => {
+  return str.replace(SNAKE_CASE_REGEX, " ").replace(CAPITALIZE_REGEX, (char) => char.toUpperCase())
 }
+
 export const compactDate = (commentDate?: string | Date | number | null) => {
   if (!commentDate) return "";
 
@@ -35,5 +38,4 @@ export const compactNumber = (commentLikes: number) => {
     notation: "compact"
   }).format(commentLikes)
 }
-
 
